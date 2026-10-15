@@ -235,7 +235,9 @@ on(document,'visibilitychange',()=>{if(!document.hidden)pull()});
 /* ---------- perhitungan ---------- */
 function MS(){const[y,m]=S.start.split('-').map(Number);return Array.from({length:+S.n},(_,i)=>{const d=new Date(y,m-1+i,1);return{k:d.getFullYear()+'-'+pad(d.getMonth()+1),l:MN[d.getMonth()]+'-'+String(d.getFullYear()).slice(2)}})}
 const act=(r,k)=>r.name&&(!r.date||r.date.slice(0,7)<=k),pd=(r,k)=>S.pay[r.no+'|'+k],due=r=>r.date?+r.date.slice(8,10):31;
-const T=new Date(),tk=T.getFullYear()+'-'+pad(T.getMonth()+1),td=T.getDate();
+let tk,td;function clk(){const T=new Date();tk=T.getFullYear()+'-'+pad(T.getMonth()+1);td=T.getDate()}clk();
+/* ganti hari/bulan otomatis saat dashboard dibiarkan terbuka */
+function tick(){const o=tk;clk();if(tk!==o&&typeof render==='function'&&document.body&&!document.body.classList.contains('locked')){S.rep=ci();Q.pk=Q.ek=null;render()}}
 function stt(r,k){if(!act(r,k))return'n';if(pd(r,k))return'l';return(k<tk||(k===tk&&td>due(r)))?'t':'b'}
 function calc(){return MS().map(m=>{let inc=0,exp=0,pot=0,L=0,B=0,occ=0;S.rooms.forEach(r=>{if(act(r,m.k)){occ++;pot+=+r.price;if(pd(r,m.k)){inc+=+r.price;L++}else B++}});S.exp.forEach(e=>exp+=+(e.v[m.k]||0));return{...m,inc,exp,pot,L,B,occ,net:inc-exp}})}
 function proj(){const C=calc(),P=S.proj,base=S.rooms.filter(r=>r.name).length,ex=C.filter(x=>x.exp>0);
@@ -279,7 +281,7 @@ function vl(){return`<div class="card"><h2>Laporan bulanan</h2><p class="m">Pili
  <div class="card"><h2>Penyimpanan Google Spreadsheet</h2><p class="m">${SYNC_URL?'Terhubung. Setiap perubahan otomatis tersimpan ke Google Spreadsheet.':'Tempel URL Apps Script di bawah. Agar semua perangkat otomatis terhubung, isi SYNC_URL di file index.html.'}</p>${SYNC_URL?'':`<div class="f"><div><label>URL Apps Script</label>${inp('sync',S.sync)}</div></div>`}<button class="btn s" data-a="bak">Cadangkan (JSON)</button><button class="btn s" data-a="res">Pulihkan dari JSON</button><button class="btn s" data-a="rst">Reset ke data awal</button><input type="file" id="fi" accept=".json" hidden></div>`}
 function render(){ch.forEach(c=>c.destroy());ch=[];const M=MS();document.title=S.name+' - Dashboard Keuangan';
  $('nv').innerHTML=TABS.map(t=>`<button class="${t[0]===tab?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('');$('tt').textContent=TABS.find(t=>t[0]===tab)[1];
- $('pe').innerHTML=M.map((m,i)=>`<option value="${i}" ${i===rm()?'selected':''}>${m.l}</option>`).join('');$('mn').innerHTML=V[tab]();if(!SY())$('st').textContent='hanya di perangkat ini';
+ $('pe').innerHTML=M.map((m,i)=>`<option value="${i}" ${i===rm()?'selected':''}>${m.l}${i===ci()&&m.k===tk?' • kini':''}</option>`).join('');$('mn').innerHTML=V[tab]();if(!SY())$('st').textContent='hanya di perangkat ini';
  if(tab==='r'){const C=calc();cc('c1','line',C.map(x=>x.l),[{label:'Pendapatan',data:C.map(x=>x.inc),borderColor:'#0b2a5b',borderWidth:3,backgroundColor:'rgba(11,42,91,.10)',fill:true,tension:.35},{label:'Pengeluaran',data:C.map(x=>x.exp),borderColor:'#b45309',borderWidth:3,borderDash:[8,5],tension:.35}])}
  if(tab==='j'){const R=proj();cc('c2','line',R.map(x=>x.l),[{label:'Pendapatan',data:R.map(x=>x.rev),borderColor:'#0b2a5b',borderWidth:3,tension:.3},{label:'Pengeluaran',data:R.map(x=>x.cost),borderColor:'#b45309',borderWidth:3,borderDash:[8,5],tension:.3},{label:'Laba bersih',data:R.map(x=>x.net),borderColor:'#0b6b3a',borderWidth:3,tension:.3}])}}
 function cc(id,type,labels,datasets){if(!window.Chart||!$(id))return;Chart.defaults.font.size=(innerWidth<=860?11:15);Chart.defaults.color='#0b1f3f';ch.push(new Chart($(id),{type,data:{labels,datasets},options:{maintainAspectRatio:false,animation:{duration:1100,easing:'easeOutQuart'},plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}}))}
@@ -293,7 +295,7 @@ function vj(){const P=S.proj,R=proj(),M=MS(),full=CAP(),avg=S.rooms.filter(r=>r.
  <div class="card"><h2>Grafik proyeksi</h2><div class="cv"><canvas id="c2"></canvas></div></div>
  <div class="card"><h2>Tabel proyeksi</h2><div class="tw"><table><tr><th>Bulan</th><th>Kamar terisi</th><th>Pendapatan</th><th>Pengeluaran</th><th>Laba bersih</th><th>Laba kumulatif</th></tr>
  ${R.map(r=>`<tr><td>${r.l}</td><td>${r.occ}</td><td>${fmt(r.rev)}</td><td>${fmt(r.cost)}</td><td class="${r.net<0?'neg':''}">${fmt(r.net)}</td><td>${fmt(r.cum)}</td></tr>`).join('')}</table></div></div>`}
-function vl(){const M=MS();return`<div class="card"><h2>Laporan bulanan</h2><div class="f"><div><label>Pilih bulan laporan</label><select data-f="rep" data-t="n">${M.map((m,i)=>`<option value="${i}" ${i==S.rep?'selected':''}>${m.l}</option>`).join('')}</select></div></div>
+function vl(){const M=MS();return`<div class="card"><h2>Laporan bulanan</h2><div class="f"><div><label>Pilih bulan laporan</label><select data-f="rep" data-t="n">${M.map((m,i)=>`<option value="${i}" ${i==S.rep?'selected':''}>${m.l}${m.k===tk?' • kini':''}</option>`).join('')}</select></div></div>
  <button class="btn" data-a="xlsx">Unduh Spreadsheet (.xlsx)</button><button class="btn" data-a="pptx">Unduh Presentasi (.pptx)</button><p class="m">Excel berisi semua data (kamar, pembayaran, pengeluaran, ringkasan, proyeksi). PPT berisi ringkasan bulan terpilih, status bayar, pengeluaran, dan grafik.</p></div>
  <div class="card"><h2>Data &amp; sinkronisasi</h2><p class="m">Data tersimpan di browser perangkat ini. Agar siapa saja bisa mengedit dari perangkat berbeda, isi URL Google Apps Script di bawah (lihat panduan). Cadangan manual tetap bisa lewat file JSON.</p>
  <div class="f"><div><label>URL Apps Script (opsional)</label>${inp('sync',S.sync)}</div></div>
@@ -305,7 +307,7 @@ function anim(){const m=$('mn');m.classList.remove('in');void m.offsetWidth;m.cl
 let tt;function toast(t){const e=$('ts');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),1700)}
 /* ---------- interaksi ---------- */
 on(document,'change',e=>{const el=e.target;
- if(el.id==='fi'){const f=el.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(d.rooms){S=norm(d);save();render()}else alert('File bukan cadangan yang valid.')}).catch(()=>alert('File tidak bisa dibaca.'));return}
+ if(el.id==='fi'){const f=el.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(d.rooms){S=norm(d);S.rep=ci();save();render()}else alert('File bukan cadangan yang valid.')}).catch(()=>alert('File tidak bisa dibaca.'));return}
  const q=el.dataset.q;if(q){if(q==='dl'){const v=el.value;el.value='';if(v==='x')xlsx();if(v==='p')pptx();return}if(q==='ps')return;Q[q]=NQ.includes(q)?+el.value:el.value;render();return}
  const p=el.dataset.f;if(!p)return;const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++){o[k[i]]=o[k[i]]??{};o=o[k[i]]}
  const v=el.dataset.t==='n'?(el.value===''?0:+el.value):el.value;o[k[k.length-1]]=v;
@@ -327,7 +329,7 @@ on(document,'click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const 
  else if(a==='xlsx'){xlsx();return}else if(a==='pptx'){pptx();return}
  else if(a==='bak'){dl(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),'cadangan-kost-griya-hans.json');return}
  else if(a==='res'){$('fi').click();return}
- else if(a==='rst'){if(confirm('Semua data akan DIKOSONGKAN dan tidak bisa dikembalikan. Lanjutkan?'))S=def();else return}
+ else if(a==='rst'){if(confirm('Semua data akan DIKOSONGKAN dan tidak bisa dikembalikan. Lanjutkan?'))S=def(),S.rep=ci();else return}
  save();render();toast('Tersimpan')});
 on(document,'keydown',e=>{if(e.key==='Enter'&&['nn','np','nd'].includes(e.target.id)){const b=document.querySelector('[data-a=addtenant]');if(b)b.click()}});
 
@@ -339,7 +341,7 @@ function logout(msg,skipPush){if(outBusy)return;outBusy=1;clearInterval(idleT);c
  const fin=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem('kgh_k');localStorage.removeItem('kgh_pw');sessionStorage.removeItem('kgh_pw')}catch(e){}
   window.__stop();window.__lockScreen(msg||'')};
  if(!skipPush&&__dirty&&SY())push();fin()}
-function idleCheck(){const d=Date.now()-lastAct;if(d>=IDLE_MS){logout('Anda keluar otomatis karena tidak ada aktivitas selama 3 menit.');return}
+function idleCheck(){tick();const d=Date.now()-lastAct;if(d>=IDLE_MS){logout('Anda keluar otomatis karena tidak ada aktivitas selama 3 menit.');return}
  const w=$('idl');if(!w)return;if(d>=WARN_MS){w.textContent='Keluar otomatis dalam '+Math.ceil((IDLE_MS-d)/1000)+' detik. Sentuh layar untuk tetap masuk.';w.style.display='block'}else w.style.display='none'}
 ['mousemove','mousedown','keydown','touchstart','scroll','wheel','click','input'].forEach(ev=>on(document,ev,()=>{lastAct=Date.now()},{passive:true,capture:true}));
 idleT=setInterval(idleCheck,1000);on(document,'visibilitychange',idleCheck);
@@ -381,7 +383,7 @@ async function pptx(){if(!(await lib('PptxGenJS')))return alert('Library PowerPo
  s=sl('Proyeksi keuangan');s.addChart(p.charts.LINE,[{name:'Pendapatan',labels:R.map(x=>x.l),values:R.map(x=>x.rev)},{name:'Pengeluaran',labels:R.map(x=>x.l),values:R.map(x=>x.cost)},{name:'Laba bersih',labels:R.map(x=>x.l),values:R.map(x=>x.net)}],{x:.5,y:1.1,w:12.3,h:5.8,showLegend:true,legendPos:'b',chartColors:['2E7D4F','B3392E','1F78C8'],valAxisLabelFormatCode:'#,##0'});
  await p.writeFile({fileName:'Laporan-'+S.name.replace(/\s+/g,'-')+'-'+m.l+'.pptx'})}
 
-render();anim();if(window.__skipPull){window.__skipPull=0;const _s=$('st');if(_s)_s.textContent='tersinkron'}else pull();
+S.rep=ci();render();anim();if(window.__skipPull){window.__skipPull=0;const _s=$('st');if(_s)_s.textContent='tersinkron'}else pull();
 
 window.__stop=function(){__L.forEach(x=>{try{x[0].removeEventListener(x[1],x[2],x[3])}catch(e){}});clearInterval(idleT);clearTimeout(tmr);clearTimeout(tt);ch.forEach(c=>{try{c.destroy()}catch(e){}});ch=[]};
 };
