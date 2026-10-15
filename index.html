@@ -200,6 +200,29 @@ img,canvas,svg{max-width:100%}
  .c{font-size:12px;padding:2px 8px}.c.mini{min-width:24px;font-size:13px;padding:2px 0}
  .idl{max-width:94vw}
 }
+
+/* ===== MENU BAWAH ALA APLIKASI (warna tema tetap navy) ===== */
+#bn,#bm{display:none}
+@media(max-width:860px),(pointer:coarse) and (max-width:1100px){
+ #nv,.sl{display:none!important}
+ .sb{flex-wrap:nowrap;gap:10px}
+ .ss{display:inline-block;order:2;margin:0;padding:8px 14px;border-radius:99px;background:rgba(255,255,255,.14);color:rgba(255,255,255,.9);font-size:12.5px}
+ .lo{order:3;width:44px;height:44px;border-radius:50%}
+ main{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+ .ts,.idl{bottom:calc(104px + env(safe-area-inset-bottom))}
+ body:not(.locked) #bn{display:grid}
+ #bn{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));height:70px;z-index:60;grid-template-columns:1fr 1fr 84px 1fr 1fr;align-items:center;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:2px solid var(--navy);border-radius:35px;box-shadow:0 10px 30px rgba(11,42,91,.25)}
+ #bn button{background:none;border:0;color:#5b6f94;display:flex;flex-direction:column;align-items:center;gap:3px;font:600 11px/1.1 inherit;padding:6px 0;position:relative;cursor:pointer;min-width:0}
+ #bn svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+ #bn button.on{color:var(--navy)}
+ #bn button.on::after{content:"";position:absolute;bottom:-3px;width:5px;height:5px;border-radius:50%;background:var(--navy)}
+ #bn .fab{width:64px;height:64px;margin:-30px auto 0;border-radius:50%;background:var(--navy);color:#fff;border:6px solid #fff;justify-content:center;box-shadow:0 8px 18px rgba(11,42,91,.3)}
+ #bn .fab svg{width:28px;height:28px;stroke-width:2.6}#bn .fab::after{display:none}
+ #bm{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:61;flex-direction:column;gap:4px;padding:8px;background:#fff;border:2px solid var(--navy);border-radius:20px;box-shadow:0 14px 40px rgba(11,42,91,.3)}
+ #bm.on{display:flex}
+ #bm button{background:none;border:0;color:var(--navy);font:600 16px inherit;text-align:left;padding:13px 18px;border-radius:14px;min-width:190px}
+ #bm button:active{background:var(--na)}
+}
 </style>
 </head>
 <body class="locked">
@@ -450,6 +473,30 @@ window.__stop=function(){__L.forEach(x=>{try{x[0].removeEventListener(x[1],x[2],
  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
  window.addEventListener('scroll',()=>{if(window.scrollX)window.scrollTo(0,window.scrollY)},{passive:true});
  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+
+ /* menu bawah ala aplikasi */
+ (function(){
+  const I=d=>'<svg viewBox="0 0 24 24">'+d+'</svg>';
+  const bn=document.createElement('div');bn.id='bn';
+  bn.innerHTML=
+   '<button data-a="tab" data-t="r">'+I('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>')+'Beranda</button>'+
+   '<button data-a="tab" data-t="k">'+I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5a3.5 3.5 0 010 7M18 14c2 .7 3.5 2.6 3.5 6"/>')+'Kamar</button>'+
+   '<button class="fab" data-a="tab" data-t="p" aria-label="Input pembayaran">'+I('<path d="M12 5v14M5 12h14"/>')+'</button>'+
+   '<button data-a="tab" data-t="e">'+I('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>')+'Biaya</button>'+
+   '<button data-a="more">'+I('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>')+'Lainnya</button>';
+  const bm=document.createElement('div');bm.id='bm';
+  bm.innerHTML='<button data-a="tab" data-t="j">Proyeksi</button><button data-a="tab" data-t="l">Laporan &amp; Data</button>';
+  document.body.append(bn,bm);
+  const mark=()=>{const a=document.querySelector('#nv button.on'),t=a&&a.dataset.t;
+   bn.querySelectorAll('button[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+   const m=bn.querySelector('[data-a=more]');if(m)m.classList.toggle('on',t==='j'||t==='l')};
+  document.addEventListener('click',e=>{
+   const m=e.target.closest('[data-a=more]');
+   if(m){bm.classList.toggle('on');return}
+   bm.classList.remove('on');
+   if(e.target.closest('#bn,#bm'))setTimeout(mark,0)},true);
+  const mn=document.getElementById('mn');if(mn)new MutationObserver(mark).observe(mn,{childList:true});
+ })();
 })();
 </script>
 </body>
