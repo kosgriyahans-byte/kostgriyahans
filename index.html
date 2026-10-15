@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Kost Griya Hans - Dashboard Keuangan</title>
 <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0b2a5b">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -125,18 +124,18 @@ html,body,*{touch-action:pan-x pan-y}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body.locked{overflow:hidden}
 body.locked .app,body.locked #ts,body.locked #idl{display:none!important}
-body:not(.locked) .app{animation:appIn .9s var(--ease) both}
+body:not(.locked) .app{animation:appIn .4s var(--ease) both}
 @keyframes appIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .lock{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;padding:24px;overflow:hidden;color:#fff;
- background:radial-gradient(120% 90% at 50% 0%,#17428a 0%,#0b2a5b 55%,#061a3b 100%);opacity:1;transition:opacity .7s var(--ease),transform .7s var(--ease),visibility .7s}
+ background:radial-gradient(120% 90% at 50% 0%,#17428a 0%,#0b2a5b 55%,#061a3b 100%);opacity:1;transition:opacity .3s var(--ease),transform .3s var(--ease),visibility .3s}
 .lock.out{opacity:0;visibility:hidden;transform:scale(1.05);pointer-events:none}
 .lk-orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.42;pointer-events:none;will-change:transform}
 .lk-orb.o1{width:360px;height:360px;background:#1d6fd1;top:-110px;left:-90px;animation:drift 15s ease-in-out infinite alternate}
 .lk-orb.o2{width:320px;height:320px;background:#2b5cb8;bottom:-100px;right:-70px;animation:drift 19s ease-in-out infinite alternate-reverse}
 @keyframes drift{to{transform:translate3d(46px,34px,0) scale(1.18)}}
-.lgl{position:relative;width:min(320px,74vw);height:auto;filter:invert(1);animation:lkLogo 1.1s var(--ease) both}
+.lgl{position:relative;width:min(320px,74vw);height:auto;filter:invert(1);animation:lkLogo .5s var(--ease) both}
 @keyframes lkLogo{from{opacity:0;transform:translateY(-16px) scale(.94)}to{opacity:1;transform:none}}
-.lk-card{position:relative;width:min(380px,100%);background:#fff;color:var(--ink);border-radius:18px;padding:26px 22px 20px;border:2px solid #fff;box-shadow:0 26px 70px rgba(0,0,0,.38);animation:lkCard .95s .18s var(--ease) both}
+.lk-card{position:relative;width:min(380px,100%);background:#fff;color:var(--ink);border-radius:18px;padding:26px 22px 20px;border:2px solid #fff;box-shadow:0 26px 70px rgba(0,0,0,.38);animation:lkCard .45s .03s var(--ease) both}
 @keyframes lkCard{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 .lk-card.shake{animation:lkShake .45s var(--ease)}
 @keyframes lkShake{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
@@ -286,11 +285,11 @@ on(document,'keydown',e=>{if(e.key==='Enter'&&['nn','np','nd'].includes(e.target
 /* ---------- keluar & auto logout 3 menit ---------- */
 const IDLE_MS=180000,WARN_MS=150000;let lastAct=Date.now(),idleT=0,outBusy=0;
 const inGas=()=>!!(window.google&&google.script&&google.script.run);
-function forbid(){if(inGas())logout('Password sudah diganti atau sesi tidak valid. Silakan masuk lagi.',1)}
+function forbid(){logout('Password sudah diganti atau sesi tidak valid. Silakan masuk lagi.',1)}
 function logout(msg,skipPush){if(outBusy)return;outBusy=1;clearInterval(idleT);clearTimeout(tmr);
  const fin=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem('kgh_k');localStorage.removeItem('kgh_pw');sessionStorage.removeItem('kgh_pw')}catch(e){}
   window.__stop();window.__lockScreen(msg||'')};
- if(!skipPush&&__dirty&&SY())push().then(fin,fin);else fin()}
+ if(!skipPush&&__dirty&&SY())push();fin()}
 function idleCheck(){const d=Date.now()-lastAct;if(d>=IDLE_MS){logout('Anda keluar otomatis karena tidak ada aktivitas selama 3 menit.');return}
  const w=$('idl');if(!w)return;if(d>=WARN_MS){w.textContent='Keluar otomatis dalam '+Math.ceil((IDLE_MS-d)/1000)+' detik. Sentuh layar untuk tetap masuk.';w.style.display='block'}else w.style.display='none'}
 ['mousemove','mousedown','keydown','touchstart','scroll','wheel','click','input'].forEach(ev=>on(document,ev,()=>{lastAct=Date.now()},{passive:true,capture:true}));
@@ -326,7 +325,7 @@ async function pptx(){if(!window.PptxGenJS)return alert('Library PowerPoint belu
  s=sl('Proyeksi keuangan');s.addChart(p.charts.LINE,[{name:'Pendapatan',labels:R.map(x=>x.l),values:R.map(x=>x.rev)},{name:'Pengeluaran',labels:R.map(x=>x.l),values:R.map(x=>x.cost)},{name:'Laba bersih',labels:R.map(x=>x.l),values:R.map(x=>x.net)}],{x:.5,y:1.1,w:12.3,h:5.8,showLegend:true,legendPos:'b',chartColors:['2E7D4F','B3392E','1F78C8'],valAxisLabelFormatCode:'#,##0'});
  await p.writeFile({fileName:'Laporan-'+S.name.replace(/\s+/g,'-')+'-'+m.l+'.pptx'})}
 
-render();anim();pull();
+render();anim();if(window.__skipPull){window.__skipPull=0;const _s=$('st');if(_s)_s.textContent='tersinkron'}else pull();
 
 window.__stop=function(){__L.forEach(x=>{try{x[0].removeEventListener(x[1],x[2],x[3])}catch(e){}});clearInterval(idleT);clearTimeout(tmr);clearTimeout(tt);ch.forEach(c=>{try{c.destroy()}catch(e){}});ch=[]};
 };
@@ -344,33 +343,34 @@ window.__stop=function(){__L.forEach(x=>{try{x[0].removeEventListener(x[1],x[2],
   return _f.apply(this,arguments)};
  const L=$('lock'),P=$('pw'),E=$('lke'),B=$('pb'),C=$('lkc'),EY=$('eye');
  $('lgl').src=document.querySelector('.lg').src;
+ try{fetch(window.KGH_SYNC,{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch(e){}
  function msg(t,info){E.textContent=t||'';E.className='lk-e'+(info?' info':'');if(t&&!info){C.classList.remove('shake');void C.offsetWidth;C.classList.add('shake')}}
  function busy(b){B.disabled=b;P.disabled=b;B.textContent=b?'Memeriksa...':'Masuk'}
  function cek(pw,cb){
   if(window.google&&google.script&&google.script.run)return google.script.run.withSuccessHandler(ok=>cb(ok===true)).withFailureHandler(()=>cb(null)).cek(pw);
   /* dibuka dari GitHub Pages: periksa password lewat URL Apps Script */
-  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);
-  fetch(window.KGH_SYNC+'?k='+encodeURIComponent(pw),{signal:ctl.signal}).then(r=>r.json()).then(d=>{clearTimeout(to);cb(d&&d.error?false:true)}).catch(()=>{clearTimeout(to);cb(null)})}
- function enter(pw){
-  PW=pw;try{sessionStorage.setItem('kgh_pw',pw)}catch(e){}
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),12000);
+  fetch(window.KGH_SYNC+'?k='+encodeURIComponent(pw),{signal:ctl.signal}).then(r=>r.json()).then(d=>{clearTimeout(to);cb(d&&d.error?false:true,d)}).catch(()=>{clearTimeout(to);cb(null)})}
+ function enter(pw,d){
+  PW=pw;try{sessionStorage.setItem('kgh_pw',pw);if(d&&d.rooms){localStorage.setItem('kgh_v1',JSON.stringify(d));window.__skipPull=1}}catch(e){}
   P.value='';P.type='password';EY.textContent='Lihat';msg('');busy(false);
   document.body.classList.remove('locked');L.classList.add('out');
-  setTimeout(()=>{if(!document.body.classList.contains('locked'))L.style.display='none'},750);
+  setTimeout(()=>{if(!document.body.classList.contains('locked'))L.style.display='none'},350);
   window.__boot()}
  function go(v,auto){
   v=(v||'').trim();if(!v)return;busy(true);msg('');
-  cek(v,ok=>{busy(false);
-   if(ok===true)return enter(v);
+  cek(v,(ok,d)=>{busy(false);
+   if(ok===true)return enter(v,d);
    try{sessionStorage.removeItem('kgh_pw')}catch(e){}
    if(ok===false)msg(auto?'Sesi berakhir. Silakan masuk lagi.':'Password salah');else msg('Gagal terhubung, coba lagi');
    if(!auto)P.focus()})}
  window.__lockScreen=function(t){
   PW='';L.style.display='flex';void L.offsetWidth;L.classList.remove('out');msg(t,1);
-  setTimeout(()=>{document.body.classList.add('locked');const m=$('mn'),n=$('nv');if(m)m.innerHTML='';if(n)n.innerHTML='';window.scrollTo(0,0)},600)};
+  setTimeout(()=>{document.body.classList.add('locked');const m=$('mn'),n=$('nv');if(m)m.innerHTML='';if(n)n.innerHTML='';window.scrollTo(0,0)},220)};
  B.onclick=()=>go(P.value);
  P.onkeydown=e=>{if(e.key==='Enter')go(P.value)};
  EY.onclick=()=>{const h=P.type==='password';P.type=h?'text':'password';EY.textContent=h?'Sembunyi':'Lihat';P.focus()};
- try{const s=sessionStorage.getItem('kgh_pw');if(s)go(s,1);else setTimeout(()=>P.focus(),900)}catch(e){}
+ try{const s=sessionStorage.getItem('kgh_pw');if(s){if(localStorage.getItem('kgh_v1'))enter(s);else go(s,1)}else setTimeout(()=>P.focus(),300)}catch(e){}
  /* kunci zoom */
  ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
  document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
