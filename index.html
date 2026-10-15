@@ -200,6 +200,8 @@ img,canvas,svg{max-width:100%}
  .c{font-size:12px;padding:2px 8px}.c.mini{min-width:24px;font-size:13px;padding:2px 0}
  .idl{max-width:94vw}
 }
+.al{padding:10px 12px;border-radius:12px;margin-top:8px;font-size:13px;border-left:4px solid}.al.r{background:var(--nob);border-color:var(--no)}.al.a{background:#fff6e5;border-color:#d98a00}.al.g{background:var(--okb);border-color:var(--ok)}.dt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.dt.r{background:var(--no)}.dt.a{background:#d98a00}.dt.g{background:var(--ok)}.dt.n{background:var(--am)}
+.tg{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.cv2{position:relative;height:150px}
 </style>
 </head>
 <body class="locked">
@@ -254,8 +256,39 @@ const inp=(p,v,t='text',x='')=>`<input data-f="${p}" data-t="${t}" type="${t==='
 const kp=(a,b,c,cl='')=>`<div class="card k"><small>${a}</small><b class="${cl}">${b}</b><span>${c||''}</span></div>`;
 const kc=(a,val,c,p,inv,f=fmt)=>{const x=p===undefined?null:{d:c-p,pc:p?Math.round((c-p)/Math.abs(p)*100):0},g=x&&(inv?x.d<=0:x.d>=0);return`<div class="card"><small>${a}</small><div class="kv"><b>${val}</b>${x?`<i class="pl ${g?'up':'dn'}">${x.d>=0?'▲':'▼'} ${Math.abs(x.pc)}%</i>`:''}</div><div class="kf">${x?(x.d>=0?'+':'-')+f(Math.abs(x.d))+' dari bulan lalu':'bulan pertama pencatatan'}</div></div>`};
 const SL={n:'-',l:'Lunas',b:'Belum bayar',t:'Menunggak'},GL={n:'–',l:'✓',b:'✗',t:'!'},rm=()=>Math.min(+S.rep||0,+S.n-1);
+/* ---------- insight otomatis: indikator, peringatan, peluang ---------- */
+function ins(C,i,m,oc,avg){
+ const cap=CAP(),pv=C[i-1],A=[],pc=(a,b)=>b>0?Math.round(a/b*100):0;
+ const occP=pc(m.occ,cap),col=pc(m.inc,m.pot),mar=pc(m.net,m.inc),er=pc(m.exp,m.inc),be=avg>0?Math.ceil(m.exp/avg):0,rv=Math.round(m.inc/cap),cpr=m.occ?Math.round(m.exp/m.occ):0;
+ const lv=(v,g,a,inv)=>inv?(v<=g?'g':v<=a?'a':'r'):(v>=g?'g':v>=a?'a':'r');
+ let tn=0;const tr=[];S.rooms.filter(r=>r.name).forEach(r=>{let n=0;MS().forEach(x=>{if(stt(r,x.k)==='t')n++});if(n){tn+=n*(+r.price||0);tr.push('Kamar '+r.no+' '+r.name+' ('+n+' bln)')}});
+ if(tr.length)A.push(['r','Tunggakan '+fmt(tn)+' dari '+tr.length+' kamar: '+tr.join(', ')+'. Segera tagih.']);
+ if(m.k===tk){const ds=S.rooms.filter(r=>act(r,m.k)&&!pd(r,m.k)&&due(r)>=td&&due(r)-td<=7);if(ds.length)A.push(['a','Jatuh tempo ≤7 hari: '+ds.map(r=>'Kamar '+r.no+' (tgl '+due(r)+')').join(', ')+'. Kirim pengingat.'])}
+ if(!m.exp)A.push(['a','Pengeluaran '+m.l+' belum dicatat, laba bersih belum akurat.']);
+ else S.exp.forEach(e=>{const v=+e.v[m.k]||0,o=C.filter((x,j)=>j!==i&&(+e.v[x.k]||0)>0).map(x=>+e.v[x.k]);if(v>0&&o.length){const a=o.reduce((s,x)=>s+x,0)/o.length;if(v>a*1.25)A.push(['a','Biaya '+e.name+' naik '+Math.round((v/a-1)*100)+'% dari rata-rata ('+fmt(v)+' vs '+fmt(a)+').'])}});
+ if(m.inc>0&&m.net<0)A.push(['r','Rugi '+fmt(-m.net)+': pengeluaran melebihi pendapatan diterima.']);
+ if(be&&m.occ<be)A.push(['r','Kamar terisi ('+m.occ+') di bawah titik impas ('+be+' kamar).']);
+ if(pv&&m.occ<pv.occ)A.push(['a','Kamar terisi turun dari '+pv.occ+' ke '+m.occ+'.']);
+ if(cap-m.occ>0)A.push(['g','Peluang: '+(cap-m.occ)+' kamar kosong = potensi '+fmt((cap-m.occ)*avg)+'/bulan.']);
+ if(m.pot>m.inc&&!tr.length)A.push(['g','Tagihan '+fmt(m.pot-m.inc)+' masih bisa ditagih bulan ini.']);
+ const bm=C.reduce((b,x)=>x.inc>b.inc?x:b,C[0]);if(bm.inc>0)A.push(['g','Pemasukan terkuat: '+bm.l+' ('+fmt(bm.inc)+').']);
+ const o='rag';A.sort((a,b)=>o.indexOf(a[0])-o.indexOf(b[0]));
+ const ik=(t,v,s,l)=>`<div class="card"><small><i class="dt ${l}"></i>${t}</small><div class="kv"><b>${v}</b></div><div class="kf">${s}</div></div>`;
+ return`<div class="card" style="margin-top:14px"><h2>Peringatan &amp; peluang · ${m.l}</h2>${A.map(a=>`<div class="al ${a[0]}">${a[1]}</div>`).join('')||'<p class="m">Belum ada data untuk dianalisis.</p>'}</div>
+ <div class="g" style="margin-bottom:14px">${ik('Okupansi',occP+'%','target ≥85%',lv(occP,85,70))}${ik('Tingkat penagihan',m.pot?col+'%':'-','diterima ÷ tagihan, target ≥95%',m.pot?lv(col,95,80):'n')}${ik('Margin laba',m.inc?mar+'%':'-','laba ÷ pendapatan, target ≥30%',m.inc?lv(mar,30,10):'n')}${ik('Rasio biaya',m.inc?er+'%':'-','biaya ÷ pendapatan, target ≤50%',m.inc?lv(er,50,70,1):'n')}${ik('Titik impas',be+' kamar','terisi sekarang '+m.occ,m.occ>=be?'g':'r')}${ik('Tunggakan',fmt(tn),tr.length+' kamar',tn?'r':'g')}${ik('Harga rata-rata',fmt(avg),'per kamar/bulan','n')}${ik('Pendapatan/kamar',fmt(rv),'diterima ÷ '+cap+' kamar (RevPAR)','n')}${ik('Biaya/kamar terisi',fmt(cpr),'pengeluaran ÷ kamar terisi','n')}</div>
+ <div class="card" style="margin-bottom:14px"><h2>Tren indikator</h2><p class="m">Titik hitam besar = bulan yang dipilih. Garis putus-putus = target.</p><div class="tg">${TRN.map((t,j)=>`<div class="tc"><small>${t}</small><div class="cv2"><canvas id="t${j}"></canvas></div></div>`).join('')}</div></div>`}
+/* ---------- grafik tren per indikator ---------- */
+const TRN=['Okupansi','Tingkat penagihan','Margin laba','Rasio biaya','Laba bersih','Tunggakan','Pendapatan per kamar','Biaya per kamar terisi'];
+function trn(C){const n=Math.max(ci(),rm())+1,D=C.slice(0,n),L=D.map(x=>x.l),sel=rm(),P=(a,b)=>b>0?Math.round(a/b*100):null,cp=v=>Math.abs(v)>=1e6?+(v/1e6).toFixed(1)+'jt':Math.abs(v)>=1e3?Math.round(v/1e3)+'rb':v;
+ const tn=D.map(x=>{let s=0;S.rooms.forEach(r=>{if(stt(r,x.k)==='t')s+=+r.price||0});return s});
+ const defs=[[D.map(x=>P(x.occ,CAP())),'#0b2a5b',85,1],[D.map(x=>P(x.inc,x.pot)),'#1a8f5f',95,1],[D.map(x=>P(x.net,x.inc)),'#0b2a5b',30,1],[D.map(x=>P(x.exp,x.inc)),'#b45309',50,1],[D.map(x=>x.net),'#1a8f5f'],[tn,'#d1344b'],[D.map(x=>Math.round(x.inc/CAP())),'#0b2a5b'],[D.map(x=>x.occ?Math.round(x.exp/x.occ):null),'#b45309']];
+ defs.forEach((d,j)=>{const el=$('t'+j);if(!el||!window.Chart)return;
+  const ds=[{data:d[0],borderColor:d[1],backgroundColor:d[1],borderWidth:2.5,tension:.3,spanGaps:true,pointRadius:d[0].map((_,k)=>k===sel?6:3),pointBackgroundColor:d[0].map((_,k)=>k===sel?'#111':d[1])}];
+  if(d[2])ds.push({data:D.map(()=>d[2]),borderColor:'#9aa0ad',borderDash:[6,5],borderWidth:1.5,pointRadius:0});
+  ch.push(new Chart(el,{type:'line',data:{labels:L,datasets:ds},options:{maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.datasetIndex?'Target '+c.parsed.y+'%':(d[3]?c.parsed.y+'%':fmt(c.parsed.y))}}},scales:{y:{ticks:{callback:v=>d[3]?v+'%':cp(v)}}}}}))})}
 function vr(){const C=calc(),i=rm(),m=C[i],pv=C[i-1],free=CAP()-m.occ,oc=S.rooms.filter(r=>r.name),avg=oc.length?sum(oc,'price')/oc.length:+S.proj.price,pr=proj();
  return`<div class="g4">${kc('Pendapatan diterima',fmt(m.inc),m.inc,pv&&pv.inc)}${kc('Pengeluaran',fmt(m.exp),m.exp,pv&&pv.exp,1)}${kc('Laba bersih',fmt(m.net),m.net,pv&&pv.net)}${kc('Kamar terisi',m.occ+' / '+CAP(),m.occ,pv&&pv.occ,0,n=>n+' kamar')}</div>
+ ${ins(C,i,m,oc,avg)}
  <div class="g2"><div class="card"><div class="ch"><div><small>Total pendapatan ${S.n} bulan</small><b class="big">${fmt(sum(C,'inc'))}</b></div><div class="lgd"><span><i style="background:var(--ac)"></i>Pendapatan</span><span><i style="background:var(--am)"></i>Pengeluaran</span></div></div><div class="cv"><canvas id="c1"></canvas></div></div>
  <div class="card"><small>Okupansi kamar ${m.l}</small><b class="big">${Math.round(m.occ/CAP()*100)}%</b><div class="bar"><i style="width:${Math.round(m.occ/CAP()*100)}%"></i></div><div class="rows"><div><span>Kamar terisi</span><b>${m.occ}</b></div><div><span>Kamar kosong</span><b>${free}</b></div><div><span>Sudah lunas</span><b>${m.L}</b></div><div><span>Belum bayar</span><b>${m.B}</b></div><div><span>Tagihan belum masuk</span><b>${fmt(m.pot-m.inc)}</b></div></div></div></div>
  <div class="g3"><div class="card"><small>Potensi ${free} kamar kosong</small><b class="big">${fmt(free*avg)}</b><p class="m">per bulan jika terisi dengan harga rata-rata ${fmt(avg)}.</p><div class="rows"><div><span>Laba proyeksi ${S.n} bln</span><b>${fmt(sum(pr,'net'))}</b></div><div><span>Kamar terisi akhir</span><b>${pr[pr.length-1].occ} / ${CAP()}</b></div></div><button class="btn" data-a="tab" data-t="j">Atur proyeksi</button></div>
@@ -282,7 +315,7 @@ function vl(){return`<div class="card"><h2>Laporan bulanan</h2><p class="m">Pili
 function render(){ch.forEach(c=>c.destroy());ch=[];const M=MS();document.title=S.name+' - Dashboard Keuangan';
  $('nv').innerHTML=TABS.map(t=>`<button class="${t[0]===tab?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('');$('tt').textContent=TABS.find(t=>t[0]===tab)[1];
  $('pe').innerHTML=M.map((m,i)=>`<option value="${i}" ${i===rm()?'selected':''}>${m.l}${i===ci()&&m.k===tk?' 🟢':''}</option>`).join('');$('mn').innerHTML=V[tab]();if(!SY())$('st').textContent='hanya di perangkat ini';
- if(tab==='r'){const C=calc();cc('c1','line',C.map(x=>x.l),[{label:'Pendapatan',data:C.map(x=>x.inc),borderColor:'#0b2a5b',borderWidth:3,backgroundColor:'rgba(11,42,91,.10)',fill:true,tension:.35},{label:'Pengeluaran',data:C.map(x=>x.exp),borderColor:'#b45309',borderWidth:3,borderDash:[8,5],tension:.35}])}
+ if(tab==='r'){const C=calc();cc('c1','line',C.map(x=>x.l),[{label:'Pendapatan',data:C.map(x=>x.inc),borderColor:'#0b2a5b',borderWidth:3,backgroundColor:'rgba(11,42,91,.10)',fill:true,tension:.35},{label:'Pengeluaran',data:C.map(x=>x.exp),borderColor:'#b45309',borderWidth:3,borderDash:[8,5],tension:.35}]);trn(C)}
  if(tab==='j'){const R=proj();cc('c2','line',R.map(x=>x.l),[{label:'Pendapatan',data:R.map(x=>x.rev),borderColor:'#0b2a5b',borderWidth:3,tension:.3},{label:'Pengeluaran',data:R.map(x=>x.cost),borderColor:'#b45309',borderWidth:3,borderDash:[8,5],tension:.3},{label:'Laba bersih',data:R.map(x=>x.net),borderColor:'#0b6b3a',borderWidth:3,tension:.3}])}}
 function cc(id,type,labels,datasets){if(!window.Chart||!$(id))return;Chart.defaults.font.size=(innerWidth<=860?11:15);Chart.defaults.color='#0b1f3f';ch.push(new Chart($(id),{type,data:{labels,datasets},options:{maintainAspectRatio:false,animation:{duration:1100,easing:'easeOutQuart'},plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}}))}
 function vj(){const P=S.proj,R=proj(),M=MS(),full=CAP(),avg=S.rooms.filter(r=>r.name).length?sum(S.rooms.filter(r=>r.name),'price')/S.rooms.filter(r=>r.name).length:+P.price;
