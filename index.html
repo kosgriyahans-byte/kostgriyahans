@@ -200,6 +200,22 @@ img,canvas,svg{max-width:100%}
  .c{font-size:12px;padding:2px 8px}.c.mini{min-width:24px;font-size:13px;padding:2px 0}
  .idl{max-width:94vw}
 }
+
+/* ===== Tabel lebar di HP -> kartu per baris ===== */
+@media(max-width:860px),(pointer:coarse) and (max-width:1100px){
+ .tw table.stk,.stk tbody{display:block;width:100%}
+ .stk tr.hd{display:none}
+ .stk tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;border:2px solid var(--bd);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:#fff}
+ .stk tr:hover td{background:transparent}
+ .stk td{display:block;border:0;padding:4px 0;white-space:normal;font-size:15px;min-width:0;overflow-wrap:anywhere}
+ .stk td::before{content:attr(data-l);display:block;font-size:12px;font-weight:700;color:var(--mut);line-height:1.3}
+ .stk td:first-child{grid-column:1/-1;font-size:16px;font-weight:700;color:var(--navy)}
+ .stk td:first-child::before,.stk td:empty{display:none}
+ .stk.mt tr{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .stk.mt td{font-size:14px}.stk.mt td:nth-child(2){grid-column:1/-1;font-size:15px}
+ .stk tr.t{background:var(--na);border-color:var(--navy)}.stk tr.t td{background:transparent}
+ .stk td .c{font-size:13px}
+}
 </style>
 </head>
 <body class="locked">
@@ -824,10 +840,16 @@ window.__stop=function(){__L.forEach(x=>{try{x[0].removeEventListener(x[1],x[2],
   const mob=matchMedia(MQ).matches;
   document.querySelectorAll('#mn .tw').forEach(w=>{
    const t=w.firstElementChild;if(!t||t.tagName!=='TABLE')return;
-   t.style.zoom='';
+   t.style.zoom='';t.classList.remove('stk');
    if(!mob)return;
    const a=w.clientWidth,n=t.scrollWidth;
-   if(a>0&&n>a+1)t.style.zoom=Math.max(a/n,.3).toFixed(3)
+   if(a>0&&n>a*1.12){
+    /* tabel terlalu lebar untuk layar HP: tampilkan tiap baris sebagai kartu agar huruf tetap besar dan tidak terpotong */
+    const rows=[...t.querySelectorAll('tr')],hd=rows.find(r=>r.querySelector('th'));
+    if(hd){const H=[...hd.children].map(c=>c.textContent.trim());hd.classList.add('hd');
+     rows.forEach(r=>{if(r===hd)return;[...r.children].forEach((c,i)=>{if(r.children.length>1)c.setAttribute('data-l',H[i]||'')})});
+     t.classList.add('stk')}
+   }else if(a>0&&n>a+1)t.style.zoom=Math.max(a/n,.3).toFixed(3)
   })}
  let ft=0;const fit=()=>{cancelAnimationFrame(ft);ft=requestAnimationFrame(fitTables)};
  const mnEl=$('mn');if(mnEl)new MutationObserver(()=>{fit();setTimeout(fit,350)}).observe(mnEl,{childList:true,subtree:true});
