@@ -246,6 +246,14 @@ img,canvas,svg{max-width:100%}
  .card.k b{white-space:normal;font-size:clamp(16px,5vw,20px)}
  .g,.g4{gap:10px}
 }
+
+/* ===== Header HP: logo di tengah, tombol keluar di kanan, seimbang ===== */
+@media(max-width:860px),(pointer:coarse) and (max-width:1100px){
+ .sb{display:grid!important;grid-template-columns:46px minmax(0,1fr) 46px;grid-template-areas:". logo out" "nav nav nav";align-items:center;column-gap:8px;row-gap:12px;padding:calc(14px + env(safe-area-inset-top)) 14px 14px}
+ .sb .lg{grid-area:logo;justify-self:center;align-self:center;order:0;width:min(190px,100%);height:auto;margin:0}
+ .sb .lo{grid-area:out;justify-self:end;align-self:center;order:0;width:46px;height:46px;margin:0;border-radius:12px}
+ .sb #nv{grid-area:nav;order:0}
+}
 </style>
 </head>
 <body class="locked">
