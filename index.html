@@ -478,17 +478,208 @@ function lib(g){if(window[g])return Promise.resolve(true);toast('Memuat library,
 
 /* ---------- export Excel ---------- */
 async function xlsx(){if(!(await lib('ExcelJS')))return alert('Library Excel gagal dimuat. Periksa koneksi internet atau matikan pemblokir iklan, lalu coba lagi.');
- const wb=new ExcelJS.Workbook(),M=MS(),C=calc(),R=proj(),L={n:'-',l:'Lunas',b:'Belum Bayar',t:'Menunggak'};
- const sh=(n,h,rows,money)=>{const w=wb.addWorksheet(n);w.addRow(h).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}};c.alignment={horizontal:'center',wrapText:true}});
-  rows.forEach(r=>w.addRow(r));w.columns.forEach((c,i)=>c.width=i<3?22:15);w.eachRow((r,i)=>i>1&&r.eachCell((c,j)=>{if(money(j))c.numFmt='"Rp"#,##0'}));return w};
- const oc=S.rooms.filter(r=>r.name);
- sh('Kamar & Penyewa',['Kamar','Penyewa','Harga Sewa/Bulan','Tgl Mulai Sewa','Jatuh Tempo (tiap bln)','Status'],S.rooms.map(r=>['Kamar '+r.no,r.name,+r.price||0,r.date,r.date?due(r):'',r.name?'Terisi':'Kosong']),j=>j===3);
- sh('Pembayaran',['Kamar','Penyewa','Sewa/Bulan',...M.map(m=>m.l),'Bulan Lunas','Total Diterima'],oc.map(r=>{const n=M.filter(m=>pd(r,m.k)&&act(r,m.k)).length;return['Kamar '+r.no,r.name,+r.price,...M.map(m=>L[stt(r,m.k)]),n,n*r.price]}),j=>j===3||j===M.length+5);
- const we=sh('Pengeluaran',['Kategori',...M.map(m=>m.l),'Total'],S.exp.map((e,i)=>[e.name,...M.map(m=>+e.v[m.k]||0),{formula:`SUM(B${i+2}:${col(M.length+1)}${i+2})`}]),j=>j>1);
- we.addRow(['TOTAL',...M.map((m,i)=>({formula:`SUM(${col(i+2)}2:${col(i+2)}${S.exp.length+1})`})),{formula:`SUM(${col(M.length+2)}2:${col(M.length+2)}${S.exp.length+1})`}]).eachCell((c,j)=>{c.font={bold:true};if(j>1)c.numFmt='"Rp"#,##0'});
- sh('Ringkasan',['Bulan','Kamar Terisi','Kamar Lunas','Kamar Belum Bayar','Pendapatan Diterima','Pengeluaran','Laba Bersih'],C.map(c=>[c.l,c.occ,c.L,c.B,c.inc,c.exp,c.net]),j=>j>4);
- sh('Proyeksi',['Bulan','Kamar Terisi','Pendapatan','Pengeluaran','Laba Bersih','Laba Kumulatif'],R.map(r=>[r.l,r.occ,r.rev,r.cost,r.net,r.cum]),j=>j>2);
- dl(new Blob([await wb.xlsx.writeBuffer()]),'Keuangan-'+S.name.replace(/\s+/g,'-')+'.xlsx')}
+ try{toast('Menyusun spreadsheet...');
+ const wb=new ExcelJS.Workbook(),M=MS(),C=calc(),R=proj(),oc=S.rooms.filter(r=>r.name),LB={n:'-',l:'Lunas',b:'Belum Bayar',t:'Menunggak'};
+ const MD=k=>{const[y,m]=k.split('-').map(Number);return new Date(Date.UTC(y,m-1,1))};
+ const nP=M.reduce((a,m)=>a+oc.filter(r=>act(r,m.k)).length,0),E2=Math.max(5,4+nP),nE=M.reduce((a,m)=>a+S.exp.filter(e=>+e.v[m.k]||0).length,0),E3=Math.max(5,4+nE);
+ wb.creator=S.name;wb.created=new Date();
+ const NAVY='FF0B2A5B',BLUE='FF1F4E79',SOFT='FFEAF1FB',GREY='FFF6F7F9',LINE='FFD9DEE7',GRN='FFE6F6EE',RED='FFFDEAEE',AMB='FFFFF4D6',RP='"Rp"#,##0;[Red]-"Rp"#,##0;"-"';
+ const bd={top:{style:'thin',color:{argb:LINE}},left:{style:'thin',color:{argb:LINE}},bottom:{style:'thin',color:{argb:LINE}},right:{style:'thin',color:{argb:LINE}}};
+ const fill=a=>({type:'pattern',pattern:'solid',fgColor:{argb:a}});
+ const head=(w,r)=>{w.getRow(r).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};c.fill=fill(BLUE);c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bd});w.getRow(r).height=24};
+ const title=(w,t,sub,span)=>{w.mergeCells(1,1,1,span);const a=w.getCell(1,1);a.value=t;a.font={bold:true,size:16,color:{argb:'FFFFFFFF'}};a.fill=fill(NAVY);a.alignment={vertical:'middle',indent:1};w.getRow(1).height=30;
+  w.mergeCells(2,1,2,span);const b=w.getCell(2,1);b.value=sub;b.font={italic:true,size:10,color:{argb:'FF5B6475'}};b.alignment={indent:1};w.getRow(2).height=18};
+ const sub0=S.name+' | Periode '+M[0].l+' s/d '+M[M.length-1].l+' | Dicetak '+tglId(todayStr());
+ const body=(w,r0,r1,c1,mon)=>{for(let r=r0;r<=r1;r++){const z=(r-r0)%2?GREY:'FFFFFFFF';for(let c=1;c<=c1;c++){const x=w.getCell(r,c);x.border=bd;if(!x.fill||!x.fill.fgColor)x.fill=fill(z);x.alignment=Object.assign({vertical:'middle'},x.alignment||{});if(mon.includes(c))x.numFmt=RP}}};
+ const tot=(w,r,c1,mon)=>{for(let c=1;c<=c1;c++){const x=w.getCell(r,c);x.font={bold:true};x.fill=fill(SOFT);x.border={...bd,top:{style:'medium',color:{argb:BLUE}}};if(mon.includes(c))x.numFmt=RP}};
+ const stCF=(w,ref)=>{w.addConditionalFormatting({ref,rules:[
+  {type:'containsText',operator:'containsText',text:'Lunas',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:GRN}},font:{color:{argb:'FF1A8F5F'},bold:true}}},
+  {type:'containsText',operator:'containsText',text:'Menunggak',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:RED}},font:{color:{argb:'FFD1344B'},bold:true}}},
+  {type:'containsText',operator:'containsText',text:'Belum Bayar',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:AMB}},font:{color:{argb:'FF8A6100'},bold:true}}}]})};
+ /* grafik -> gambar (Chart.js di kanvas tersembunyi) */
+ const pic=async(type,labels,sets,w,h,opt={})=>{if(!window.Chart)return null;const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const g=new Chart(cv,{type,data:{labels,datasets:sets},options:Object.assign({animation:false,responsive:false,devicePixelRatio:1,plugins:{legend:{display:sets.length>1||type==='doughnut',position:'bottom',labels:{font:{size:15}}},title:{display:!!opt.t,text:opt.t,font:{size:20,weight:'bold'},color:'#0b2a5b'}},scales:type==='doughnut'?{}:{x:{ticks:{font:{size:14}},grid:{display:false}},y:{beginAtZero:true,ticks:{font:{size:14},callback:v=>'Rp'+(Math.abs(v)>=1e6?(v/1e6).toLocaleString('id-ID')+' jt':v.toLocaleString('id-ID'))}}}},opt.o||{})});
+  const ctx=cv.getContext('2d');ctx.save();ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.restore();
+  const u=cv.toDataURL('image/png');g.destroy();return wb.addImage({base64:u,extension:'png'})};
+ const sumInc=sum(C,'inc'),sumExp=sum(C,'exp'),sumNet=sumInc-sumExp,sumPot=sum(C,'pot');
+ const mi=Math.max(0,Math.min(S.rep,M.length-1)),cm=C[mi];
+
+ /* 1. RINGKASAN */
+ const w1=wb.addWorksheet('Ringkasan',{views:[{showGridLines:false}],properties:{tabColor:{argb:NAVY}}});
+ w1.columns=[{width:4},{width:24},{width:20},{width:20},{width:20},{width:20},{width:20},{width:20},{width:4}];
+ w1.mergeCells('B1:H1');w1.getCell('B1').value=S.name+' - Laporan Keuangan';w1.getCell('B1').font={bold:true,size:20,color:{argb:'FFFFFFFF'}};w1.getCell('B1').fill=fill(NAVY);w1.getCell('B1').alignment={vertical:'middle',indent:1};w1.getRow(1).height=40;
+ w1.mergeCells('B2:H2');w1.getCell('B2').value=sub0;w1.getCell('B2').font={italic:true,size:10,color:{argb:'FF5B6475'}};w1.getCell('B2').alignment={indent:1};
+ const kcols=[['B','C'],['D','E'],['F','G']];
+ [['Total Pendapatan',{formula:"SUM('Laba Rugi'!B5:B"+(4+M.length)+')'},RP],['Total Pengeluaran',{formula:"SUM('Laba Rugi'!C5:C"+(4+M.length)+')'},RP],['Laba / Rugi Bersih',{formula:"SUM('Laba Rugi'!D5:D"+(4+M.length)+')'},RP]].forEach((k,i)=>{
+  const [a,b]=kcols[i];w1.mergeCells(a+'4:'+b+'4');w1.mergeCells(a+'5:'+b+'6');
+  const l=w1.getCell(a+'4');l.value=k[0];l.font={bold:true,size:10,color:{argb:'FF5B6475'}};l.alignment={horizontal:'center'};l.fill=fill(SOFT);
+  const v=w1.getCell(a+'5');v.value=k[1];v.numFmt=k[2];v.font={bold:true,size:18,color:{argb:i===2?(sumNet>=0?'FF1A8F5F':'FFD1344B'):NAVY}};v.alignment={horizontal:'center',vertical:'middle'};v.fill=fill(SOFT);
+  ['4','5','6'].forEach(r=>[a,b].forEach(cc=>{w1.getCell(cc+r).border=bd;w1.getCell(cc+r).fill=fill(SOFT)}))});
+ const hm=w1.getCell('H4');hm.value='Margin Laba';hm.font={bold:true,size:10,color:{argb:'FF5B6475'}};hm.alignment={horizontal:'center'};hm.fill=fill(SOFT);hm.border=bd;
+ const hv=w1.getCell('H5');hv.value={formula:"IF(SUM('Laba Rugi'!B5:B"+(4+M.length)+")=0,0,SUM('Laba Rugi'!D5:D"+(4+M.length)+")/SUM('Laba Rugi'!B5:B"+(4+M.length)+'))'};hv.numFmt='0.0%';hv.font={bold:true,size:18,color:{argb:NAVY}};hv.alignment={horizontal:'center',vertical:'middle'};hv.fill=fill(SOFT);hv.border=bd;w1.mergeCells('H5:H6');
+ w1.getRow(5).height=22;w1.getRow(6).height=22;
+ /* bulan terpilih */
+ w1.mergeCells('B8:H8');const sh8=w1.getCell('B8');sh8.value='Ringkasan bulan '+cm.l+' (bulan laporan terpilih)';sh8.font={bold:true,size:12,color:{argb:'FFFFFFFF'}};sh8.fill=fill(BLUE);sh8.alignment={indent:1};w1.getRow(8).height=22;
+ const mr=[['Kamar terisi',cm.occ+' dari '+CAP()+' kamar'],['Kamar lunas / belum bayar',cm.L+' lunas, '+cm.B+' belum'],['Pendapatan diterima',cm.inc],['Potensi pendapatan penuh',cm.pot],['Pengeluaran',cm.exp],['Laba / rugi bersih',cm.net],['Tingkat pembayaran',cm.pot?cm.inc/cm.pot:0]];
+ mr.forEach((r,i)=>{const n=9+i;w1.mergeCells('B'+n+':D'+n);w1.mergeCells('E'+n+':G'+n);const a=w1.getCell('B'+n),b=w1.getCell('E'+n);a.value=r[0];b.value=r[1];b.alignment={horizontal:'right'};if(typeof r[1]==='number'){b.numFmt=i===6?'0.0%':RP}b.font={bold:i===5};['B','C','D','E','F','G'].forEach(c=>{const x=w1.getCell(c+n);x.border=bd;x.fill=fill(i%2?GREY:'FFFFFFFF')})});
+ /* grafik */
+ w1.mergeCells('B17:H17');const gh=w1.getCell('B17');gh.value='Grafik ringkas';gh.font={bold:true,size:12,color:{argb:'FFFFFFFF'}};gh.fill=fill(BLUE);gh.alignment={indent:1};w1.getRow(17).height=22;
+ const lab=M.map(m=>m.l);
+ const i1=await pic('bar',lab,[{label:'Pendapatan',data:C.map(x=>x.inc),backgroundColor:'#1f4e79'},{label:'Pengeluaran',data:C.map(x=>x.exp),backgroundColor:'#e08a3c'}],760,380,{t:'Pendapatan vs Pengeluaran per Bulan'});
+ const i2=await pic('line',lab,[{label:'Laba bersih',data:C.map(x=>x.net),borderColor:'#1a8f5f',backgroundColor:'#1a8f5f',borderWidth:4,pointRadius:5,tension:.25}],760,380,{t:'Laba / Rugi Bersih per Bulan'});
+ const et=S.exp.map(e=>({n:e.name,v:M.reduce((a,m)=>a+(+e.v[m.k]||0),0)})).filter(x=>x.v>0);
+ const i3=et.length?await pic('doughnut',et.map(x=>x.n),[{data:et.map(x=>x.v),backgroundColor:['#1f4e79','#e08a3c','#1a8f5f','#8e6bbf','#d1344b','#7a7f8c','#3aa6b9','#c9a227']}],760,380,{t:'Komposisi Pengeluaran'}):null;
+ const i4=await pic('bar',lab,[{label:'Kamar lunas',data:C.map(x=>x.L),backgroundColor:'#1a8f5f'},{label:'Belum bayar',data:C.map(x=>x.B),backgroundColor:'#e0a93c'}],760,380,{t:'Status Pembayaran Kamar per Bulan',o:{scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:14}}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:14}}}}}});
+ const put=(id,c,r)=>{if(id!==null)w1.addImage(id,{tl:{col:c,row:r},ext:{width:430,height:215}})};
+ put(i1,1,17.2);put(i2,4.45,17.2);put(i3,1,28.3);put(i4,4.45,28.3);
+ w1.getCell('B42').value='Catatan: grafik berupa gambar. Untuk memantau satu bulan, buka lembar Pantau Periode. Filter ada di lembar Pembayaran, Pengeluaran, dan Laba Rugi.';w1.getCell('B42').font={italic:true,size:9,color:{argb:'FF5B6475'}};
+
+
+ /* 1b. PANTAU PERIODE (pilih bulan -> semua tabel menyesuaikan) */
+ const PR=c=>'Pembayaran!$'+c+'$5:$'+c+'$'+E2,XR=c=>'Pengeluaran!$'+c+'$5:$'+c+'$'+E3;
+ const w8=wb.addWorksheet('Pantau Periode',{views:[{state:'frozen',ySplit:7,showGridLines:false}],properties:{tabColor:{argb:'FF1A8F5F'}}});
+ title(w8,'Pantau per Periode','Pilih bulan di sel kuning; semua tabel otomatis menyesuaikan dan dibandingkan dengan bulan sebelumnya. '+sub0,6);
+ w8.getRow(3).height=6;
+ w8.getCell('A4').value='Pilih periode:';w8.getCell('A4').font={bold:true,size:11};w8.getCell('A4').alignment={horizontal:'right'};
+ const sel=w8.getCell('B4');sel.value=MD(M[mi].k);sel.numFmt='mmm-yy';sel.font={bold:true,size:12,color:{argb:'FF0000FF'}};sel.fill=fill('FFFFFF00');sel.border=bd;sel.alignment={horizontal:'center'};
+ sel.dataValidation={type:'list',allowBlank:false,formulae:["'Laba Rugi'!$A$5:$A$"+(4+M.length)],showErrorMessage:true,errorTitle:'Periode',error:'Pilih bulan dari daftar',showInputMessage:true,promptTitle:'Periode',prompt:'Klik panah untuk memilih bulan'};
+ w8.getCell('D4').value='Bulan sebelumnya:';w8.getCell('D4').font={bold:true,size:10};w8.getCell('D4').alignment={horizontal:'right'};
+ const pv=w8.getCell('E4');pv.value={formula:'EDATE(B4,-1)'};pv.numFmt='mmm-yy';pv.font={bold:true,size:11};pv.alignment={horizontal:'center'};
+ w8.getCell('A5').value='Sel kuning = isian (ganti bulan di sini). Sel lain berisi rumus, jangan ditimpa.';w8.getCell('A5').font={italic:true,size:9,color:{argb:'FF5B6475'}};
+ ['Pos','Periode terpilih','Bulan sebelumnya','Selisih','Perubahan','Keterangan'].forEach((t,i)=>w8.getCell(7,i+1).value=t);head(w8,7);
+ const PS=[['Tagihan sewa (Rp)',d=>'SUMIFS('+PR('H')+','+PR('C')+','+d+')',1,'Total sewa yang seharusnya masuk'],
+  ['Pendapatan diterima (Rp)',d=>'SUMIFS('+PR('I')+','+PR('C')+','+d+')',1,'Hanya yang berstatus Lunas'],
+  ['Pengeluaran (Rp)',d=>'SUMIFS('+XR('C')+','+XR('A')+','+d+')',1,'Semua kategori'],
+  ['Laba / Rugi bersih (Rp)',null,1,'Pendapatan dikurangi pengeluaran'],
+  ['Kamar lunas',d=>'COUNTIFS('+PR('C')+','+d+','+PR('E')+',"Lunas")',0,''],['Kamar belum bayar',d=>'COUNTIFS('+PR('C')+','+d+','+PR('E')+',"Belum Bayar")',0,''],['Kamar menunggak',d=>'COUNTIFS('+PR('C')+','+d+','+PR('E')+',"Menunggak")',0,'']];
+ PS.forEach((p,i)=>{const r=8+i;w8.getCell(r,1).value=p[0];
+  [['B','$B$4'],['C','$E$4']].forEach(([L,d])=>{w8.getCell(L+r).value={formula:p[1]?p[1](d):L+(r-2)+'-'+L+(r-1)}});
+  w8.getCell(r,4).value={formula:'B'+r+'-C'+r};w8.getCell(r,5).value={formula:'IF(C'+r+'=0,"-",(B'+r+'-C'+r+')/ABS(C'+r+'))'};w8.getCell(r,6).value=p[3]});
+ body(w8,8,14,6,[]);
+ for(let r=8;r<=14;r++){[2,3,4].forEach(c=>w8.getCell(r,c).numFmt=r<=11?RP:'0;[Red]-0;"-"');w8.getCell(r,5).numFmt='0.0%;[Red]-0.0%';w8.getCell(r,5).alignment={horizontal:'center'}}
+ for(let c=1;c<=6;c++){const x=w8.getCell(11,c);x.font={bold:true};x.fill=fill(SOFT)}
+ /* kategori pengeluaran */
+ const K1=18,K2=Math.max(K1,17+S.exp.length);
+ w8.getCell('A16').value='Pengeluaran per kategori';w8.getCell('A16').font={bold:true,size:11,color:{argb:NAVY}};
+ w8.getCell('C16').value='Tip: klik panah judul kolom untuk mengurutkan (mis. Periode terpilih: Terbesar ke Terkecil).';w8.getCell('C16').font={italic:true,size:9,color:{argb:'FF5B6475'}};
+ ['Kategori','Periode terpilih','Bulan sebelumnya','Selisih','Porsi periode terpilih','Tanda'].forEach((t,i)=>w8.getCell(17,i+1).value=t);head(w8,17);
+ S.exp.forEach((e,i)=>{const r=K1+i;w8.getCell(r,1).value=e.name;
+  w8.getCell(r,2).value={formula:'SUMIFS('+XR('C')+','+XR('A')+',$B$4,'+XR('B')+',$A'+r+')'};
+  w8.getCell(r,3).value={formula:'SUMIFS('+XR('C')+','+XR('A')+',$E$4,'+XR('B')+',$A'+r+')'};
+  w8.getCell(r,4).value={formula:'B'+r+'-C'+r};
+  w8.getCell(r,5).value={formula:'IF(SUM($B$'+K1+':$B$'+K2+')=0,0,B'+r+'/SUM($B$'+K1+':$B$'+K2+'))'};
+  w8.getCell(r,6).value={formula:'IF(D'+r+'>0,"Naik",IF(D'+r+'<0,"Turun","Tetap"))'}});
+ body(w8,K1,K2,6,[2,3,4],[]);for(let r=K1;r<=K2;r++){w8.getCell(r,5).numFmt='0.0%';[5,6].forEach(c=>w8.getCell(r,c).alignment={horizontal:'center'})}
+ const KT=K2+1;w8.getCell(KT,1).value='TOTAL';[['B','B'],['C','C'],['D','D'],['E','E']].forEach(([L])=>{w8.getCell(L+KT).value={formula:'SUM('+L+K1+':'+L+K2+')'}});
+ tot(w8,KT,6,[2,3,4]);w8.getCell(KT,5).numFmt='0.0%';w8.getCell(KT,5).alignment={horizontal:'center'};
+ w8.autoFilter={from:{row:17,column:1},to:{row:K2,column:6}};
+ w8.addConditionalFormatting({ref:'B'+K1+':B'+K2,rules:[{type:'dataBar',cfvo:[{type:'num',value:0},{type:'max'}],color:{argb:'FFE08A3C'},gradient:false}]});
+ w8.addConditionalFormatting({ref:'F'+K1+':F'+K2,rules:[{type:'containsText',operator:'containsText',text:'Naik',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:RED}},font:{color:{argb:'FFD1344B'},bold:true}}},{type:'containsText',operator:'containsText',text:'Turun',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:GRN}},font:{color:{argb:'FF1A8F5F'},bold:true}}}]});
+ /* status per kamar */
+ const Q0=KT+3;
+ w8.getCell(Q0-1,1).value='Status pembayaran per kamar';w8.getCell(Q0-1,1).font={bold:true,size:11,color:{argb:NAVY}};
+ ['Kamar','Penyewa','Status periode terpilih','Status bulan sebelumnya','Tagihan (Rp)',''].forEach((t,i)=>w8.getCell(Q0,i+1).value=t);head(w8,Q0,6);
+ oc.forEach((r0,i)=>{const r=Q0+1+i;w8.getCell(r,1).value='Kamar '+r0.no;w8.getCell(r,2).value=r0.name;
+  [[3,'$B$4'],[4,'$E$4']].forEach(([c,d])=>{w8.getCell(r,c).value={formula:'IFERROR(INDEX('+PR('E')+',MATCH(1,INDEX(('+PR('A')+'=$A'+r+')*('+PR('C')+'='+d+'),0),0)),"-")'}});
+  w8.getCell(r,5).value=+r0.price||0});
+ const QE=Math.max(Q0+1,Q0+oc.length);body(w8,Q0+1,QE,5,[5],[]);for(let r=Q0+1;r<=QE;r++)[1,3,4].forEach(c=>w8.getCell(r,c).alignment={horizontal:'center'});
+ stCF(w8,'C'+(Q0+1)+':D'+QE);
+ [28,24,24,24,24,30].forEach((x,i)=>w8.getColumn(i+1).width=x);
+
+ /* 2. PEMBAYARAN (tabel datar + filter) */
+ const w2=wb.addWorksheet('Pembayaran',{views:[{state:'frozen',ySplit:4,xSplit:2}],properties:{tabColor:{argb:'FF1A8F5F'}}});
+ title(w2,'Rekap Pembayaran Sewa Kamar','Klik panah di judul kolom untuk memfilter atau mengurutkan (Bulan: Terlama ke Terbaru; juga Kamar, Status, Metode). '+sub0,9);
+ w2.getRow(3).height=6;
+ const h2=['Kamar','Penyewa','Bulan','Jatuh Tempo','Status','Tanggal Bayar','Metode','Tagihan (Rp)','Diterima (Rp)'];
+ h2.forEach((t,i)=>w2.getCell(4,i+1).value=t);head(w2,4);
+ let r2=5;
+ M.forEach(m=>oc.forEach(r=>{if(!act(r,m.k))return;const s=stt(r,m.k),I=s==='l'?payInfo(r.no,m.k):{d:'',m:''};
+  const dd=r.date?new Date(m.k+'-'+pad(Math.min(due(r),28))+'T00:00:00Z'):null;
+  w2.getRow(r2).values=['Kamar '+r.no,r.name,MD(m.k),dd,LB[s],I.d?new Date(I.d+'T00:00:00Z'):'',I.m,+r.price||0,s==='l'?(+r.price||0):0];r2++}));
+ const e2=Math.max(5,r2-1);
+ if(r2>5){body(w2,5,e2,9,[8,9]);for(let r=5;r<=e2;r++){w2.getCell(r,3).numFmt='mmm-yy';w2.getCell(r,4).numFmt='dd mmm yyyy';w2.getCell(r,6).numFmt='dd mmm yyyy';[1,3,4,5,6,7].forEach(c=>w2.getCell(r,c).alignment={horizontal:'center',vertical:'middle'})}}
+ w2.autoFilter={from:{row:4,column:1},to:{row:e2,column:9}};
+ const t2=e2+2;w2.getCell(t2,1).value='TOTAL (ikut terfilter)';w2.getCell(t2,7).value='Subtotal:';w2.getCell(t2,8).value={formula:'SUBTOTAL(109,H5:H'+e2+')'};w2.getCell(t2,9).value={formula:'SUBTOTAL(109,I5:I'+e2+')'};tot(w2,t2,9,[8,9]);w2.getCell(t2,7).alignment={horizontal:'right'};
+ w2.getCell(t2+1,1).value='Tip: subtotal di atas otomatis berubah mengikuti filter yang Anda pilih.';w2.getCell(t2+1,1).font={italic:true,size:9,color:{argb:'FF5B6475'}};
+ stCF(w2,'E5:E'+e2);
+ [10,24,12,14,14,16,16,16,16].forEach((x,i)=>w2.getColumn(i+1).width=x);
+
+ /* 3. PENGELUARAN (tabel datar + filter) */
+ const w3=wb.addWorksheet('Pengeluaran',{views:[{state:'frozen',ySplit:4}],properties:{tabColor:{argb:'FFE08A3C'}}});
+ title(w3,'Rekap Pengeluaran','Filter atau urutkan per Kategori dan Bulan (Terlama ke Terbaru) lewat panah di judul kolom. '+sub0,4);
+ w3.getRow(3).height=6;
+ ['Bulan','Kategori','Nominal (Rp)','Porsi dari Total Bulan'].forEach((t,i)=>w3.getCell(4,i+1).value=t);head(w3,4);
+ let r3=5;
+ M.forEach(m=>S.exp.forEach(e=>{const v=+e.v[m.k]||0;if(!v)return;w3.getRow(r3).values=[MD(m.k),e.name,v,C.find(c=>c.k===m.k).exp?v/C.find(c=>c.k===m.k).exp:0];r3++}));
+ const e3=Math.max(5,r3-1);
+ if(r3>5){body(w3,5,e3,4,[3]);for(let r=5;r<=e3;r++){w3.getCell(r,4).numFmt='0.0%';w3.getCell(r,1).numFmt='mmm-yy';w3.getCell(r,1).alignment={horizontal:'center'};w3.getCell(r,4).alignment={horizontal:'center'}}}
+ else{w3.getCell(5,1).value='Belum ada pengeluaran tercatat';w3.getCell(5,1).font={italic:true,color:{argb:'FF7A7F8C'}}}
+ w3.autoFilter={from:{row:4,column:1},to:{row:e3,column:4}};
+ const t3=e3+2;w3.getCell(t3,1).value='TOTAL (ikut terfilter)';w3.getCell(t3,3).value={formula:'SUBTOTAL(109,C5:C'+e3+')'};tot(w3,t3,4,[3]);
+ if(r3>5)w3.addConditionalFormatting({ref:'C5:C'+e3,rules:[{type:'dataBar',cfvo:[{type:'num',value:0},{type:'max'}],color:{argb:'FFE08A3C'},gradient:false}]});
+ [14,30,18,22].forEach((x,i)=>w3.getColumn(i+1).width=x);
+ /* tabel silang kategori x bulan */
+ const w3b=wb.addWorksheet('Pengeluaran per Kategori',{views:[{state:'frozen',ySplit:4,xSplit:1}],properties:{tabColor:{argb:'FFE08A3C'}}});
+ title(w3b,'Pengeluaran per Kategori per Bulan','Tabel silang kategori x bulan. Urutkan baris lewat panah di kolom Total atau bulan tertentu. '+sub0,M.length+2);
+ w3b.getRow(3).height=6;
+ ['Kategori',...M.map(m=>MD(m.k)),'Total'].forEach((t,i)=>w3b.getCell(4,i+1).value=t);head(w3b,4);for(let c=2;c<=M.length+1;c++)w3b.getCell(4,c).numFmt='mmm-yy';
+ S.exp.forEach((e,i)=>{const r=5+i;w3b.getRow(r).values=[e.name,...M.map(m=>+e.v[m.k]||0),{formula:'SUM(B'+r+':'+col(M.length+1)+r+')'}]});
+ const e3b=4+S.exp.length;body(w3b,5,e3b,M.length+2,M.map((_,i)=>i+2).concat([M.length+2]));
+ const tr3=e3b+1;w3b.getRow(tr3).values=['TOTAL',...M.map((m,i)=>({formula:'SUM('+col(i+2)+'5:'+col(i+2)+e3b+')'})),{formula:'SUM('+col(M.length+2)+'5:'+col(M.length+2)+e3b+')'}];tot(w3b,tr3,M.length+2,M.map((_,i)=>i+2).concat([M.length+2]));
+ w3b.autoFilter={from:{row:4,column:1},to:{row:e3b,column:M.length+2}};
+ w3b.getColumn(1).width=28;for(let i=2;i<=M.length+2;i++)w3b.getColumn(i).width=14;
+
+ /* 4. LABA RUGI (rumus + filter) */
+ const w4=wb.addWorksheet('Laba Rugi',{views:[{state:'frozen',ySplit:4}],properties:{tabColor:{argb:NAVY}}});
+ title(w4,'Laporan Laba Rugi Bulanan','Angka dihitung otomatis dengan rumus. Filter/urutkan bulan lewat panah di judul kolom. '+sub0,8);
+ w4.getRow(3).height=6;
+ ['Bulan','Pendapatan Diterima (Rp)','Pengeluaran (Rp)','Laba / Rugi Bersih (Rp)','Margin (%)','Laba Kumulatif (Rp)','Kamar Terisi','Status'].forEach((t,i)=>w4.getCell(4,i+1).value=t);head(w4,4);
+ C.forEach((c,i)=>{const r=5+i;w4.getRow(r).values=[MD(c.k),c.inc,c.exp,{formula:'B'+r+'-C'+r},{formula:'IF(B'+r+'=0,0,D'+r+'/B'+r+')'},{formula:i?'F'+(r-1)+'+D'+r:'D'+r},c.occ+'/'+CAP(),{formula:'IF(D'+r+'>0,"Laba",IF(D'+r+'<0,"Rugi","Impas"))'}]});
+ const e4=4+M.length;body(w4,5,e4,8,[2,3,4,6]);for(let r=5;r<=e4;r++){w4.getCell(r,5).numFmt='0.0%';w4.getCell(r,1).numFmt='mmm-yy';[1,5,7,8].forEach(c=>w4.getCell(r,c).alignment={horizontal:'center'})}
+ w4.getRow(e4+1).values=['TOTAL',{formula:'SUM(B5:B'+e4+')'},{formula:'SUM(C5:C'+e4+')'},{formula:'SUM(D5:D'+e4+')'},{formula:'IF(B'+(e4+1)+'=0,0,D'+(e4+1)+'/B'+(e4+1)+')'},{formula:'F'+e4},'',''];tot(w4,e4+1,8,[2,3,4,6]);w4.getCell(e4+1,5).numFmt='0.0%';w4.getCell(e4+1,5).alignment={horizontal:'center'};
+ w4.autoFilter={from:{row:4,column:1},to:{row:e4,column:8}};
+ w4.addConditionalFormatting({ref:'H5:H'+e4,rules:[{type:'containsText',operator:'containsText',text:'Laba',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:GRN}},font:{color:{argb:'FF1A8F5F'},bold:true}}},{type:'containsText',operator:'containsText',text:'Rugi',style:{fill:{type:'pattern',pattern:'solid',bgColor:{argb:RED}},font:{color:{argb:'FFD1344B'},bold:true}}}]});
+ w4.addConditionalFormatting({ref:'B5:B'+e4,rules:[{type:'dataBar',cfvo:[{type:'num',value:0},{type:'max'}],color:{argb:'FF8FB8E3'},gradient:false}]});
+ [14,24,20,24,12,22,14,12].forEach((x,i)=>w4.getColumn(i+1).width=x);
+ const i5=await pic('line',lab,[{label:'Laba kumulatif',data:(()=>{let a=0;return C.map(x=>a+=x.net)})(),borderColor:'#0b2a5b',backgroundColor:'rgba(31,78,121,.15)',fill:true,borderWidth:4,pointRadius:5,tension:.2}],760,360,{t:'Laba Kumulatif'});
+ if(i5!==null)w4.addImage(i5,{tl:{col:0.1,row:e4+3},ext:{width:560,height:265}});
+
+ /* 5. MATRIKS STATUS */
+ const w5=wb.addWorksheet('Matriks Pembayaran',{views:[{state:'frozen',ySplit:4,xSplit:2}],properties:{tabColor:{argb:'FF1A8F5F'}}});
+ title(w5,'Matriks Status Pembayaran','Hijau = Lunas, Kuning = Belum Bayar, Merah = Menunggak. Filter per penyewa atau status. '+sub0,M.length+4);
+ w5.getRow(3).height=6;
+ ['Kamar','Penyewa',...M.map(m=>MD(m.k)),'Bulan Lunas','Total Diterima (Rp)'].forEach((t,i)=>w5.getCell(4,i+1).value=t);head(w5,4);for(let c=3;c<=M.length+2;c++)w5.getCell(4,c).numFmt='mmm-yy';
+ oc.forEach((r,i)=>{const n=M.filter(m=>pd(r,m.k)&&act(r,m.k)).length;w5.getRow(5+i).values=['Kamar '+r.no,r.name,...M.map(m=>LB[stt(r,m.k)]),n,n*(+r.price||0)]});
+ const e5=Math.max(5,4+oc.length);body(w5,5,e5,M.length+4,[M.length+4]);
+ for(let r=5;r<=e5;r++)for(let c=3;c<=M.length+3;c++)w5.getCell(r,c).alignment={horizontal:'center'};
+ stCF(w5,'C5:'+col(M.length+2)+e5);
+ w5.autoFilter={from:{row:4,column:1},to:{row:e5,column:M.length+4}};
+ w5.getColumn(1).width=11;w5.getColumn(2).width=24;for(let i=3;i<=M.length+2;i++)w5.getColumn(i).width=12;w5.getColumn(M.length+3).width=12;w5.getColumn(M.length+4).width=20;
+
+ /* 6. KAMAR & PENYEWA */
+ const w6=wb.addWorksheet('Kamar & Penyewa',{views:[{state:'frozen',ySplit:4}],properties:{tabColor:{argb:'FF7A7F8C'}}});
+ title(w6,'Data Kamar & Penyewa','Filter per status kamar (Terisi / Kosong). '+sub0,6);
+ w6.getRow(3).height=6;
+ ['Kamar','Penyewa','Harga Sewa / Bulan (Rp)','Tanggal Mulai Sewa','Jatuh Tempo (tiap tgl)','Status'].forEach((t,i)=>w6.getCell(4,i+1).value=t);head(w6,4);
+ S.rooms.forEach((r,i)=>w6.getRow(5+i).values=['Kamar '+r.no,r.name||'-',+r.price||0,r.date?new Date(r.date+'T00:00:00Z'):'',r.date?due(r):'',r.name?'Terisi':'Kosong']);
+ const e6=Math.max(5,4+S.rooms.length);body(w6,5,e6,6,[3]);for(let r=5;r<=e6;r++){w6.getCell(r,4).numFmt='dd mmm yyyy';[1,4,5,6].forEach(c=>w6.getCell(r,c).alignment={horizontal:'center'})}
+ w6.autoFilter={from:{row:4,column:1},to:{row:e6,column:6}};
+ [11,26,24,20,22,12].forEach((x,i)=>w6.getColumn(i+1).width=x);
+
+ /* 7. PROYEKSI */
+ const w7=wb.addWorksheet('Proyeksi',{views:[{state:'frozen',ySplit:4}],properties:{tabColor:{argb:'FF7A7F8C'}}});
+ title(w7,'Proyeksi Keuangan','Berdasarkan asumsi di menu Proyeksi dashboard. '+sub0,6);
+ w7.getRow(3).height=6;
+ ['Bulan','Kamar Terisi','Pendapatan (Rp)','Pengeluaran (Rp)','Laba Bersih (Rp)','Laba Kumulatif (Rp)'].forEach((t,i)=>w7.getCell(4,i+1).value=t);head(w7,4);
+ R.forEach((r,i)=>w7.getRow(5+i).values=[MD(C[i].k),r.occ,Math.round(r.rev),Math.round(r.cost),Math.round(r.net),Math.round(r.cum)]);
+ const e7=4+R.length;body(w7,5,e7,6,[3,4,5,6]);for(let r=5;r<=e7;r++){w7.getCell(r,1).numFmt='mmm-yy'};for(let r=5;r<=e7;r++)[1,2].forEach(c=>w7.getCell(r,c).alignment={horizontal:'center'});
+ w7.autoFilter={from:{row:4,column:1},to:{row:e7,column:6}};
+ [14,16,20,20,20,22].forEach((x,i)=>w7.getColumn(i+1).width=x);
+
+ /* cetak rapi */
+ wb.worksheets.forEach(w=>{w.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}};w.headerFooter={oddFooter:'&L'+S.name+'&CHalaman &P dari &N&R&A'}});
+ dl(new Blob([await wb.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Keuangan-'+S.name.replace(/\s+/g,'-')+'-'+tk+'.xlsx');toast('Spreadsheet diunduh');
+ }catch(e){alert('Spreadsheet gagal dibuat: '+e.message)}}
 function col(n){let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s}
 
 /* ---------- export PowerPoint ---------- */
