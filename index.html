@@ -388,69 +388,69 @@ function terbilang(n){n=Math.floor(+n||0);const s=['','satu','dua','tiga','empat
 const tglId=d=>{const[y,m,x]=d.split('-').map(Number);return x+' '+BLN[m-1]+' '+y},blnId=k=>{const[y,m]=k.split('-').map(Number);return BLN[m-1]+' '+y};
 const imgCache={};function loadImg(u){return imgCache[u]||(imgCache[u]=new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=u}))}
 async function drawKw(r,k,date,metode){
- const [lg,tt]=await Promise.all([loadImg(LOGO),loadImg(TTD)]),W=1536,H=1024,SC=2,c=document.createElement('canvas');c.width=W*SC;c.height=H*SC;
+ const tt=await loadImg(TTD),W=1536,H=1024,SC=2,c=document.createElement('canvas');c.width=W*SC;c.height=H*SC;
  const x=c.getContext('2d');x.scale(SC,SC);
- const NV='#0d2b5c',MB='#1a4f94',DK='#0a2a5e',LB='#dde9f7',FF='Arial, Helvetica, sans-serif';
+ const NV='#0d2b5c',MU='#7a8aa5',GD='#a9c8f5',GN='#1b7a4a',SOFT='#c9d8f0',FF='"Helvetica Neue", Arial, Helvetica, sans-serif';
  const rr=(X,Y,w,h,a)=>{x.beginPath();x.moveTo(X+a,Y);x.lineTo(X+w-a,Y);x.arcTo(X+w,Y,X+w,Y+a,a);x.lineTo(X+w,Y+h-a);x.arcTo(X+w,Y+h,X+w-a,Y+h,a);x.lineTo(X+a,Y+h);x.arcTo(X,Y+h,X,Y+h-a,a);x.lineTo(X,Y+a);x.arcTo(X,Y,X+a,Y,a);x.closePath()};
  const T=(t,X,Y,font,col,al='left')=>{x.font=font;x.fillStyle=col;x.textAlign=al;x.textBaseline='alphabetic';x.fillText(t,X,Y)};
  const fit=(t,X,Y,w,sz,wt,col,al='left')=>{let z=sz;do{x.font=wt+' '+z+'px '+FF;z--}while(x.measureText(t).width>w&&z>12);T(t,X,Y,wt+' '+(z+1)+'px '+FF,col,al)};
- const SP=(t,X,Y,font,col,w)=>{x.font=font;x.fillStyle=col;x.textAlign='left';x.textBaseline='alphabetic';const ch=[...t],tot=ch.reduce((a,s)=>a+x.measureText(s).width,0),g=(w-tot)/(ch.length-1);let cx=X;ch.forEach(s=>{x.fillText(s,cx,Y);cx+=x.measureText(s).width+g})};
- const harga=+r.price||0,P=fmt(harga),PN=P.replace(/^Rp\s?/,'');
- /* latar */
- x.fillStyle='#f6f9fd';x.fillRect(0,0,W,H);
- /* gelombang kanan atas */
- x.beginPath();x.moveTo(1185,0);x.bezierCurveTo(1290,60,1420,70,1536,142);x.lineTo(1536,0);x.closePath();x.fillStyle=MB;x.fill();
- x.beginPath();x.moveTo(1290,0);x.bezierCurveTo(1380,45,1470,58,1536,100);x.lineTo(1536,0);x.closePath();x.fillStyle=DK;x.fill();
- x.beginPath();x.moveTo(1290,44);x.bezierCurveTo(1400,50,1490,78,1536,126);x.lineWidth=3;x.strokeStyle='#fff';x.stroke();
- /* gelombang kiri bawah */
- x.beginPath();x.moveTo(0,775);x.bezierCurveTo(90,835,220,892,380,932);x.bezierCurveTo(520,966,620,1000,700,1024);x.lineTo(0,1024);x.closePath();x.fillStyle=MB;x.fill();
- x.beginPath();x.moveTo(0,845);x.bezierCurveTo(120,872,270,930,470,1024);x.lineTo(0,1024);x.closePath();x.fillStyle=DK;x.fill();
- x.beginPath();x.moveTo(0,832);x.bezierCurveTo(130,858,280,915,440,1000);x.lineWidth=3;x.strokeStyle='#fff';x.stroke();
- /* logo */
- SP('KOST',88,146,'500 36px '+FF,NV,128);
- x.save();x.lineWidth=20;x.lineJoin='miter';x.lineCap='butt';x.strokeStyle=NV;x.beginPath();x.moveTo(252,143);x.lineTo(352,66);x.lineTo(460,143);x.stroke();x.restore();
- x.fillStyle=NV;[[334,113],[352,113],[334,131],[352,131]].forEach(p=>{rr(p[0],p[1],16,16,3);x.fill()});
- const tl=document.createElement('canvas');tl.width=lg.width;tl.height=lg.height;const tc=tl.getContext('2d');tc.drawImage(lg,0,0);{const id=tc.getImageData(0,0,tl.width,tl.height),d=id.data;for(let i=3;i<d.length;i+=4)if(d[i]<60)d[i]=0;tc.putImageData(id,0,0)}tc.globalCompositeOperation='source-in';tc.fillStyle=NV;tc.fillRect(0,0,tl.width,tl.height);
- const sy=Math.round(lg.height*.35),sh=lg.height-sy,lw=580;x.drawImage(tl,0,sy,lg.width,sh,82,150,lw,sh*lw/lg.width);
- /* pemisah + judul */
- x.fillStyle=NV;x.fillRect(702,65,3,224);
- fit('KWITANSI',760,133,385,90,'bold',NV);
- SP('KOST GRIYA HANS',760,171,'bold 26px '+FF,NV,385);
- [[222,'+62 812-2653-8810'],[269,'+62 811-2636-133']].forEach(q=>{const cy=q[0]-1;
-  x.fillStyle=NV;x.beginPath();x.arc(780,cy,20,0,7);x.fill();x.beginPath();x.moveTo(762,cy+20);x.lineTo(764,cy+4);x.lineTo(774,cy+12);x.closePath();x.fill();
-  x.strokeStyle='#fff';x.lineWidth=5;x.lineCap='round';x.beginPath();x.arc(784,cy-4,11,Math.PI*.55,Math.PI*1.1);x.stroke();x.lineCap='butt';
-  T(q[1],822,q[0]+10,'30px '+FF,NV)});
- /* nomor otomatis */
+ const SP=(t,X,Y,font,col,g,al='left')=>{x.font=font;x.fillStyle=col;x.textAlign='left';x.textBaseline='alphabetic';const ch=[...t],tot=ch.reduce((a,s)=>a+x.measureText(s).width+g,-g);let cx=al==='right'?X-tot:X;ch.forEach(s=>{x.fillText(s,cx,Y);cx+=x.measureText(s).width+g})};
+ const grad=(x0,y0,x1,y1,a,b)=>{const g=x.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,a);g.addColorStop(1,b);return g};
+ const circ=(cx,cy,rad,col)=>{x.fillStyle=col;x.beginPath();x.arc(cx,cy,rad,0,7);x.fill()};
+ const harga=+r.price||0,PN=fmt(harga).replace(/^Rp\s?/,''),tb=terbilang(harga);
+ /* latar biru gradasi + dekorasi */
+ x.fillStyle=grad(0,0,W,H,'#0a2352','#1a58a6');x.fillRect(0,0,W,H);
+ circ(60,40,230,'rgba(255,255,255,.05)');circ(60,40,150,'rgba(255,255,255,.05)');
+ circ(260,1000,260,'rgba(255,255,255,.06)');circ(260,1000,170,'rgba(255,255,255,.06)');
+ x.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<7;i++)for(let j=0;j<5;j++){x.beginPath();x.arc(88+i*26,590+j*26,2.6,0,7);x.fill()}
+ /* kartu putih */
+ x.save();x.shadowColor='rgba(4,16,44,.45)';x.shadowBlur=60;x.shadowOffsetX=-6;x.shadowOffsetY=18;rr(440,40,1056,944,40);x.fillStyle='#f8fafd';x.fill();x.restore();
+ x.save();rr(440,40,1056,944,40);x.clip();circ(1496,40,170,'rgba(13,43,92,.045)');circ(1496,40,100,'rgba(13,43,92,.05)');x.restore();
+ /* panel kiri: brand */
+ rr(80,92,80,80,24);x.fillStyle='#fff';x.fill();
+ x.save();x.strokeStyle=NV;x.lineWidth=8;x.lineJoin='miter';x.beginPath();x.moveTo(94,142);x.lineTo(120,114);x.lineTo(146,142);x.stroke();x.restore();
+ x.fillStyle=NV;[[113,134],[123,134],[113,144],[123,144]].forEach(p=>{rr(p[0],p[1],8,8,2);x.fill()});
+ SP('KOST',82,236,'500 26px '+FF,SOFT,9);
+ T('Griya Hans',80,292,'bold 54px '+FF,'#fff');
+ x.fillStyle=GD;rr(80,316,76,6,3);x.fill();
+ SP('KWITANSI',82,458,'bold 17px '+FF,GD,7);
  const NO='KGH/'+k.slice(0,4)+'/'+k.slice(5,7)+'/'+String(r.no).padStart(3,'0');
- x.font='bold 23px '+FF;const nw=x.measureText(NO).width;x.font='23px '+FF;const pw=Math.max(230,nw+Math.ceil(x.measureText('No. ').width)+44);
- rr(1472-pw,95,pw,58,29);x.fillStyle=NV;x.fill();
- const w1=x.measureText('No. ').width;T('No. ',1472-pw/2-(w1+nw)/2,132,'23px '+FF,'#fff');T(NO,1472-pw/2-(w1+nw)/2+w1,132,'bold 23px '+FF,'#fff');
- x.fillStyle=NV;x.fillRect(1472-pw,168,pw,3);
- /* panel */
- rr(44,328,1448,417,28);x.fillStyle='#f9fbfe';x.fill();x.lineWidth=2;x.strokeStyle='#c9d9ee';x.stroke();
- const rows=[['Sudah terima dari',r.name],['Untuk pembayaran','Sewa kamar kos'+(metode?' ('+metode+')':'')],['Kamar No.',String(r.no)],['Periode',blnId(k)]];
- rows.forEach((q,i)=>{const yl=393+i*61;T(q[0],93,yl-3,'27px '+FF,NV);T(':',398,yl-3,'27px '+FF,NV);
-  fit(q[1],436,yl-9,1000,30,'bold',NV);
-  x.save();x.setLineDash([2,4]);x.lineCap='round';x.strokeStyle='#6b7f9f';x.lineWidth=2;x.beginPath();x.moveTo(427,yl);x.lineTo(1453,yl);x.stroke();x.restore()});
- /* jumlah */
- rr(88,609,1367,108,24);x.fillStyle=NV;x.fill();
- x.beginPath();x.moveTo(906,617);x.lineTo(1432,617);x.arcTo(1447,617,1447,632,15);x.lineTo(1447,694);x.arcTo(1447,709,1432,709,15);x.lineTo(851,709);x.closePath();x.fillStyle=LB;x.fill();
- T('Jumlah',118,675,'bold 38px '+FF,'#fff');T(':',305,675,'bold 38px '+FF,'#fff');
- T('Rp.',932,675,'bold 38px '+FF,NV);x.fillStyle=NV;x.fillRect(1000,684,389,2);
- fit(PN,1384,677,375,44,'bold',NV,'right');
- /* cap LUNAS */
- x.save();x.translate(868,892);x.rotate(-8*Math.PI/180);rr(-110,-43,220,86,18);x.lineWidth=6;x.strokeStyle='#1b7a4a';x.stroke();T('LUNAS',0,14,'bold 40px '+FF,'#1b7a4a','center');x.restore();
+ fit(NO,80,506,310,32,'bold','#fff');
+ T('Bukti pembayaran sewa kamar',80,540,'18px '+FF,SOFT);
+ [[858,'+62 812-2653-8810'],[912,'+62 811-2636-133']].forEach(q=>{const cy=q[0]-7;
+  circ(100,cy,22,'rgba(255,255,255,.14)');
+  x.strokeStyle='#fff';x.lineWidth=4.5;x.lineCap='round';x.beginPath();x.arc(104,cy-3,9,Math.PI*.55,Math.PI*1.1);x.stroke();x.lineCap='butt';
+  T(q[1],140,q[0],'21px '+FF,'#e6eefb')});
+ /* kartu: header */
+ SP('DETAIL PEMBAYARAN',520,112,'bold 16px '+FF,MU,5);
+ const pw=160,ph=54,px=1420-pw,py=80;
+ rr(px,py,pw,ph,27);x.fillStyle='#dff2e8';x.fill();
+ circ(px+30,py+27,13,GN);x.strokeStyle='#fff';x.lineWidth=3.5;x.lineCap='round';x.lineJoin='round';x.beginPath();x.moveTo(px+24,py+27);x.lineTo(px+28.5,py+31.5);x.lineTo(px+36.5,py+22.5);x.stroke();x.lineCap='butt';
+ SP('LUNAS',px+52,py+35,'bold 20px '+FF,GN,3);
+ /* kartu: tile info */
+ const items=[['DITERIMA DARI',r.name],['KAMAR','No. '+r.no],['UNTUK PEMBAYARAN','Sewa kamar kos'],['PERIODE',blnId(k)],['TANGGAL BAYAR',tglId(date)],['METODE PEMBAYARAN',metode||'Transfer bank']];
+ const tw0=430,th0=92;
+ items.forEach((q,i)=>{const col=i%2,row=Math.floor(i/2),X=520+col*470,Y=166+row*112;
+  rr(X,Y,tw0,th0,20);x.fillStyle='#eaf0f9';x.fill();
+  x.fillStyle=col?'#6fa5e8':'#1f5fb8';rr(X,Y+22,6,th0-44,3);x.fill();
+  SP(q[0],X+28,Y+34,'bold 14px '+FF,MU,3);fit(q[1],X+28,Y+71,tw0-56,29,'bold',NV)});
+ /* kartu: total */
+ rr(520,520,900,196,30);x.fillStyle=grad(520,520,1420,716,'#0d2b5c','#1c5db0');x.fill();
+ x.save();rr(520,520,900,196,30);x.clip();circ(1380,520,150,'rgba(255,255,255,.07)');circ(1380,520,90,'rgba(255,255,255,.07)');circ(540,716,90,'rgba(255,255,255,.08)');x.restore();
+ SP('TOTAL DIBAYAR',560,570,'bold 15px '+FF,SOFT,5);
+ T('Rp',560,650,'bold 38px '+FF,GD);
+ x.font='bold 38px '+FF;const rw=x.measureText('Rp').width;
+ fit(PN,560+rw+14,652,760-rw,78,'bold','#fff');
+ fit('Terbilang: '+tb.charAt(0).toUpperCase()+tb.slice(1)+' rupiah',560,694,820,19,'italic',SOFT);
  /* footer */
- x.fillStyle=NV;x.fillRect(243,778,157,5);
- ['Terima kasih telah','mempercayakan tempat tinggal Anda','di Kost Griya Hans.'].forEach((t,i)=>T(t,243,815+i*31,'italic 25px '+FF,NV));
- /* tanggal + tanda tangan */
- T('Yogyakarta,',1085,797,'26px '+FF,NV);
- fit(tglId(date),1238,791,214,26,'bold',NV);
- x.save();x.setLineDash([2,4]);x.lineCap='round';x.strokeStyle='#6b7f9f';x.lineWidth=2;x.beginPath();x.moveTo(1232,797);x.lineTo(1455,797);x.stroke();x.restore();
- rr(1085,826,370,120,22);x.fillStyle='#fff';x.fill();x.lineWidth=2;x.strokeStyle=NV;x.stroke();
- const th=92,tw=th*tt.width/tt.height;x.drawImage(tt,1270-tw/2,840,tw,th);
- T('( '+PENGELOLA+' )',1270,988,'bold 24px '+FF,NV,'center');
+ x.fillStyle='#1f5fb8';rr(520,852,6,64,3);x.fill();
+ T('Terima kasih telah mempercayakan',546,882,'19px '+FF,MU);T('tempat tinggal Anda di Kost Griya Hans.',546,910,'19px '+FF,MU);
+ T('Yogyakarta, '+tglId(date),1420,764,'19px '+FF,MU,'right');
+ const th=70,tw=th*tt.width/tt.height;x.save();x.globalCompositeOperation='multiply';x.drawImage(tt,1290-tw/2,776,tw,th);x.restore();
+ x.fillStyle=NV;x.fillRect(1150,858,270,2);
+ T(PENGELOLA,1285,894,'bold 22px '+FF,NV,'center');T('Pengelola Kost Griya Hans',1285,920,'16px '+FF,MU,'center');
  return c}
+
 function pdfJpegs(pages){const enc=new TextEncoder(),parts=[],off=[];let len=0;const push=v=>{const b=typeof v==='string'?enc.encode(v):v;parts.push(b);len+=b.length};
  const PW=595.28,PH=396.85,n=pages.length,total=3+n*3;push('%PDF-1.4\n');
  off[1]=len;push('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
