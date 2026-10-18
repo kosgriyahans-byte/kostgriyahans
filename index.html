@@ -82,6 +82,10 @@ input,select{font-size:17px;min-height:50px;padding:10px 14px;border:2px solid #
 button:focus-visible,input:focus,select:focus{outline:3px solid #0b5cad;outline-offset:2px;box-shadow:none}
 .ts{font-size:17px}.bar{height:12px}
 @media(max-width:860px){.lg{width:110px}#nv button{font-size:16px}}
+.rc{display:inline-block;padding:11px 18px;border:2px solid var(--navy);border-radius:26px;font-size:16px;font-weight:700;color:var(--navy);background:#fff;cursor:pointer;margin:0 8px 8px 0;transition:background .25s,color .25s,transform .25s}.rc:hover{background:var(--na)}.rc.on{background:var(--navy);color:#fff}.rc:active{transform:scale(.97)}
+.rseg{display:flex;border:2px solid var(--navy);border-radius:12px;overflow:hidden}.rseg button{flex:1;padding:13px;font-size:16px;font-weight:700;color:var(--navy);background:#fff;border:0;cursor:pointer;transition:background .25s,color .25s}.rseg button.on.in{background:#0b6b3a;color:#fff}.rseg button.on.out{background:#b42318;color:#fff}
+.rl{display:block;font-size:15px;font-weight:700;color:var(--navy);margin:16px 0 8px}.rr{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--bd);font-size:15px}
+.rhd{display:flex;justify-content:space-between;width:100%;background:none;border:0;padding:4px 0;font-size:16px;font-weight:700;color:var(--navy);cursor:pointer}
 /* ===== Tema navy: outline tiap panel + gerak halus ===== */
 :root{--z:1.1;--navy:#0b2a5b;--navy2:#143a78;--ink:#0b1f3f;--ac:#0b2a5b;--mut:#3f4d68;--bd:#c9d3e3;--na:#eaf0f9;--ring:#1d6fd1}
 body{color:var(--ink)}
@@ -317,7 +321,7 @@ const ci=()=>{const i=MS().findIndex(m=>m.k===tk);return i<0?(tk<S.start?0:S.n-1
 const sum=(a,k)=>a.reduce((s,x)=>s+x[k],0);
 
 /* ---------- tampilan ---------- */
-const Q={room:0,pr:0,pk:null,ek:null,ei:0,na:'all',nm:'all'},NQ=['room','ei','pr'];
+const Q={room:0,pr:0,pk:null,ek:null,ei:0,na:'all',nm:'all',nset:0,nall:0},NQ=['room','ei','pr'];
 const sel=(q,o,v)=>`<select data-q="${q}">${o.map(x=>`<option value="${x[0]}" ${String(x[0])===String(v)?'selected':''}>${x[1]}</option>`).join('')}</select>`;
 const inp=(p,v,t='text',x='')=>`<input data-f="${p}" data-t="${t}" type="${t==='n'?'number':t}" value="${v??''}" ${x}>`;
 const kp=(a,b,c,cl='')=>`<div class="card k"><small>${a}</small><b class="${cl}">${b}</b><span>${c||''}</span></div>`;
@@ -375,8 +379,6 @@ function RN(){return{accs:[{id:'a1',bank:'BCA',name:'FX Dwi Handoyo Brono Aji',o
 function RNN(r){if(!r||!Array.isArray(r.accs)||!r.accs.length)return RN();r.tx=Array.isArray(r.tx)?r.tx:[];r.cats=Array.isArray(r.cats)&&r.cats.length?r.cats:RN().cats;r.cin=Array.isArray(r.cin)&&r.cin.length?r.cin:RN().cin;r.accs.forEach(x=>{if(!x.bank)x.bank='BCA'});return r}
 const KC='Pembayaran kost penghuni',rnE=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rnL=x=>x?rnE((x.bank||'BCA')+' a.n. '+x.name):'';
-function rnCats(){const R=S.reno,i=$('rj').value==='in';$('rc').innerHTML=(i?R.cin:R.cats).map(x=>`<option>${rnE(x)}</option>`).join('');rnTen()}
-function rnTen(){const w=$('rtw');if(w)w.style.display=$('rj').value==='in'&&$('rc').value===KC?'':'none'}
 function rpGet(){try{return JSON.parse(localStorage.getItem('kgh_rp'))||{}}catch(e){return{}}}
 function rpSet(o){try{localStorage.setItem('kgh_rp',JSON.stringify(o))}catch(e){toast('Foto bukti terlalu besar untuk disimpan')}}
 let PF='';
@@ -386,25 +388,37 @@ function rnData(a=Q.na,m=Q.nm){const R=S.reno,accs=R.accs.filter(x=>a==='all'||x
  if(m!=='all')all.filter(t=>t.date.slice(0,7)<m).forEach(t=>open+=sg(t));
  let inc=0,out=0,bal=open;const cats={},ci={},rows=(m==='all'?all:all.filter(t=>t.date.slice(0,7)===m)).map(t=>{if(t.type==='in'){inc+=t.amt;ci[t.cat]=(ci[t.cat]||0)+t.amt}else{out+=t.amt;cats[t.cat]=(cats[t.cat]||0)+t.amt}bal+=sg(t);return{...t,bal}});
  return{accs,open,inc,out,bal,rows,cats,catsIn:ci}}
-function vn(){const R=S.reno,D=rnData(),gab=Q.na==='all',pf=rpGet(),ml=k=>MN[+k.slice(5)-1]+'-'+k.slice(2,4),ms=[...new Set([...MS().map(x=>x.k),...R.tx.map(t=>t.date.slice(0,7))])].sort(),
- kp=(l,v,n)=>`<div class="card"><small>${l}</small><div class="kv"><b>${fmt(v)}</b></div><div class="kf">${n}</div></div>`;
- return`<div class="card"><h2>Sumber dana renovasi</h2><p class="m">Buku kas ini terpisah dari pengeluaran operasional kos dan tidak masuk ke laba di Dashboard.</p><div class="f"><div><label>Rekening</label>${sel('na',[['all','Semua rekening (gabungan)'],...R.accs.map(x=>[x.id,rnL(x)])],Q.na)}</div><div><label>Periode</label>${sel('nm',[['all','Semua periode'],...ms.map(k=>[k,ml(k)])],Q.nm)}</div></div><button class="btn" data-a="rnxls">Unduh laporan (.xlsx)</button></div>
- <div class="g4">${kp('Saldo awal',D.open,Q.nm==='all'?'dana awal rekening':'saldo awal bulan')}${kp('Total masuk',D.inc,'setoran / termin')}${kp('Total keluar',D.out,'biaya renovasi')}${kp('Sisa dana',D.bal,'saldo saat ini')}</div>
+const RF={t:'in',c:'',r:'',a:'',n:'',k:'',d:''};
+function rnKeep(){const g=i=>$(i)?$(i).value:null;if(g('rn')!==null)RF.n=g('rn');if(g('rk')!==null)RF.k=g('rk');if(g('rd')!==null)RF.d=g('rd')}
+const rcb=(a,i,t,on)=>`<button class="rc${on?' on':''}" data-a="${a}" data-i="${rnE(i)}">${rnE(t)}</button>`,rnDt=d=>{const p=d.split('-');return +p[2]+' '+MN[p[1]-1]};
+function rnEff(){const R=S.reno,ty=RF.t,list=ty==='in'?R.cin:R.cats;return{ty,list,c:list.includes(RF.c)?RF.c:list[0],ac:Q.na!=='all'?Q.na:(R.accs.find(x=>x.id===RF.a)?RF.a:R.accs[0].id)}}
+function rnAcc(){const R=S.reno;return`<div class="card"><small>Rekening BCA</small><div style="margin-top:8px">${R.accs.map(x=>rcb('rnacc',x.id,x.name,Q.na===x.id)).join('')}${rcb('rnacc','all','Gabungan',Q.na==='all')}</div></div>`}
+function rnKpi(D){return`<div class="g3"><div class="card"><small>Uang masuk</small><div class="kv"><b style="color:#0b6b3a">${fmt(D.inc)}</b></div></div><div class="card"><small>Uang keluar</small><div class="kv"><b style="color:#b42318">${fmt(D.out)}</b></div></div><div class="card" style="background:var(--navy)"><small style="color:#c9d3e3">Sisa dana</small><div class="kv"><b style="color:#fff">${fmt(D.bal)}</b></div></div></div>`}
+function rnForm(){const R=S.reno,E=rnEff(),gab=Q.na==='all',rooms=S.rooms.filter(r=>r.name);
+ return`<div class="card"><h2>Catat transaksi</h2><div class="rseg"><button class="${E.ty==='in'?'on in':''}" data-a="rntype" data-i="in">Uang masuk</button><button class="${E.ty==='out'?'on out':''}" data-a="rntype" data-i="out">Uang keluar</button></div>
+ ${gab?`<label class="rl">${E.ty==='in'?'Masuk ke rekening':'Dari rekening'}</label><div>${R.accs.map(x=>rcb('rnra',x.id,x.name,x.id===E.ac)).join('')}</div>`:''}
+ <label class="rl">Nominal (Rp)</label><input id="rn" type="number" inputmode="numeric" step="5000" min="0" placeholder="0" value="${rnE(RF.n)}" style="font-size:22px;font-weight:700">
+ <label class="rl">Untuk apa?</label><div>${E.list.map(x=>rcb('rncat',x,x,x===E.c)).join('')}${rcb('rncat','+','+ Lainnya',0)}</div>
+ ${E.ty==='in'&&E.c===KC&&rooms.length?`<label class="rl">Penghuni yang bayar</label><div>${rooms.map(r=>rcb('rnten',r.no,r.name,String(r.no)===String(RF.r))).join('')}</div>`:''}
+ <div class="f" style="margin:12px 0"><div><label>Keterangan (opsional)</label><input id="rk" placeholder="mis. Semen 20 sak" value="${rnE(RF.k)}"></div><div><label>Tanggal</label><input id="rd" type="date" value="${RF.d||todayStr()}"></div></div>
+ <button class="btn" data-a="rnadd">Simpan</button><label class="btn s" style="cursor:pointer">Foto bukti<input id="rpf" type="file" accept="image/*" hidden></label>${PF?'<span class="m"> Foto siap dilampirkan</span>':''}</div>`}
+function rnRecent(D){const rs=D.rows.slice(-3).reverse();return`<div class="card"><h2>Riwayat terbaru</h2>${rs.length?rs.map(t=>`<div class="rr"><span>${rnDt(t.date)} &middot; ${rnE(t.cat)}${t.ten?' &middot; '+rnE(t.tn):t.desc?' &middot; '+rnE(t.desc):''}</span><b style="color:${t.type==='in'?'#0b6b3a':'#b42318'}">${t.type==='in'?'+':'-'}${fmt(t.amt)}</b></div>`).join(''):'<p class="m">Belum ada transaksi. Catat yang pertama di atas.</p>'}<button class="btn s" data-a="rnall" data-i="1" style="margin-top:10px">Lihat semua riwayat</button></div>`}
+function rnSet(){const R=S.reno;return`<div class="card"><button class="rhd" data-a="rnset"><span>Pengaturan</span><span>${Q.nset?'&#9650;':'&#9660;'}</span></button>${Q.nset?`<div style="margin-top:10px">${R.accs.map((x,i)=>`<div class="f"><div><label>Atas nama rekening BCA</label>${inp('reno.accs.'+i+'.name',rnE(x.name))}</div><div><label>Saldo awal (Rp)</label>${inp('reno.accs.'+i+'.open',x.open,'n','step="100000"')}</div></div>`).join('')}<p class="m">Kategori baru? Pilih "+ Lainnya" saat mencatat transaksi.</p></div>`:''}</div>`}
+function rnFull(D){const R=S.reno,gab=Q.na==='all',pf=rpGet(),ml=k=>MN[+k.slice(5)-1]+'-'+k.slice(2,4),ms=[...new Set([...MS().map(x=>x.k),...R.tx.map(t=>t.date.slice(0,7))])].sort();
+ return`<div class="card"><button class="btn s" data-a="rnall" data-i="">&larr; Kembali</button><h2 style="margin-top:12px">Riwayat dan laporan</h2><div class="f"><div><label>Periode</label>${sel('nm',[['all','Semua periode'],...ms.map(k=>[k,ml(k)])],Q.nm)}</div></div><button class="btn" data-a="rnxls">Unduh laporan (.xlsx)</button></div>${rnAcc()}${rnKpi(D)}
  <div class="g2"><div class="card"><h2>Pemasukan per kategori</h2>${Object.keys(D.catsIn).length?'<div class="cv"><canvas id="c4"></canvas></div>':'<p class="m">Belum ada pemasukan pada periode ini.</p>'}</div><div class="card"><h2>Pengeluaran per kategori</h2>${Object.keys(D.cats).length?'<div class="cv"><canvas id="c3"></canvas></div>':'<p class="m">Belum ada pengeluaran pada periode ini.</p>'}</div></div>
- <div class="card"><h2>Catat transaksi</h2><div class="f"><div><label>Jenis</label><select id="rj"><option value="in">Pemasukan</option><option value="out">Pengeluaran</option></select></div><div><label>Rekening</label><select id="ra">${R.accs.map(x=>`<option value="${x.id}" ${x.id===Q.na?'selected':''}>${rnL(x)}</option>`).join('')}</select></div><div><label>Tanggal</label><input id="rd" type="date" value="${todayStr()}"></div><div><label>Kategori</label><select id="rc">${R.cin.map(c=>`<option>${rnE(c)}</option>`).join('')}</select></div><div id="rtw"><label>Penghuni yang bayar</label><select id="rt"><option value="">-</option>${S.rooms.filter(r=>r.name).map(r=>`<option value="${r.no}">Kamar ${r.no} - ${rnE(r.name)}</option>`).join('')}</select></div><div><label>Nominal (Rp)</label><input id="rn" type="number" step="5000" min="0"></div><div><label>Keterangan</label><input id="rk" placeholder="mis. Semen 20 sak"></div><div><label>Bukti (foto nota / transfer)</label><input id="rpf" type="file" accept="image/*"></div></div><button class="btn" data-a="rnadd">Catat transaksi</button></div>
- <div class="card"><h2>Riwayat transaksi</h2><div class="tw"><table class="mt"><tr><th>Tanggal</th>${gab?'<th>Rekening</th>':''}<th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Bukti</th><th></th></tr>
- <tr><td colspan="${gab?7:6}">Saldo awal</td><td>${fmt(D.open)}</td><td></td><td></td></tr>
- ${D.rows.map(t=>`<tr><td>${t.date}</td>${gab?`<td>${rnL(R.accs.find(x=>x.id===t.acc))}</td>`:''}<td class="${t.type==='in'?'pos':'neg'}">${t.type==='in'?'Masuk':'Keluar'}</td><td>${rnE(t.cat)}</td><td>${((t.ten?'Kamar '+t.ten+' '+rnE(t.tn)+(t.desc?' - ':''):'')+rnE(t.desc))||'-'}</td><td>${t.type==='in'?fmt(t.amt):'-'}</td><td>${t.type==='out'?fmt(t.amt):'-'}</td><td>${fmt(t.bal)}</td><td>${pf[t.id]?`<button class="btn s" data-a="rnpf" data-i="${t.id}">Lihat</button>`:(t.pf?'di perangkat lain':'-')}</td><td><button class="btn s" data-a="rndel" data-i="${t.id}">Hapus</button></td></tr>`).join('')}
- <tr class="t"><td colspan="${gab?5:4}">Total</td><td>${fmt(D.inc)}</td><td>${fmt(D.out)}</td><td>${fmt(D.bal)}</td><td></td><td></td></tr></table></div></div>
- <div class="card"><h2>Pengaturan rekening dan kategori</h2>${R.accs.map((x,i)=>`<div class="f"><div><label>Bank</label>${inp('reno.accs.'+i+'.bank',rnE(x.bank||'BCA'))}</div><div><label>Atas nama rekening ${i+1}</label>${inp('reno.accs.'+i+'.name',rnE(x.name))}</div><div><label>Saldo awal (Rp)</label>${inp('reno.accs.'+i+'.open',x.open,'n','step="100000"')}</div></div>`).join('')}
- <div class="f" style="margin-top:12px"><div><label>Rekening baru</label><input id="ran" placeholder="Nama pemilik rekening"></div><div><label>Kategori pemasukan baru</label><input id="rci" placeholder="mis. Deposit penghuni"></div><div><label>Kategori pengeluaran baru</label><input id="rcn" placeholder="mis. Listrik proyek"></div></div><button class="btn s" data-a="rnacc">+ Tambah rekening</button><button class="btn s" data-a="rncin">+ Kategori pemasukan</button><button class="btn s" data-a="rncat">+ Kategori pengeluaran</button><p class="m">Foto bukti tersimpan di perangkat yang dipakai mengunggah, data transaksi tersinkron seperti biasa.</p></div>`}
-function rnAdd(){const g=i=>$(i).value,amt=Math.round(+g('rn')||0),dt=g('rd');
- if(!dt){$('rd').focus();toast('Isi tanggal dulu');return 0}
+ <div class="card"><h2>Semua transaksi</h2><div class="tw"><table class="mt"><tr><th>Tanggal</th>${gab?'<th>Rekening</th>':''}<th>Kategori</th><th>Keterangan</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Bukti</th><th></th></tr>
+ <tr><td colspan="${gab?6:5}">Saldo awal</td><td>${fmt(D.open)}</td><td></td><td></td></tr>
+ ${D.rows.map(t=>`<tr><td>${t.date}</td>${gab?`<td>${rnL(R.accs.find(x=>x.id===t.acc))}</td>`:''}<td class="${t.type==='in'?'pos':'neg'}">${rnE(t.cat)}</td><td>${((t.ten?'Kamar '+t.ten+' '+rnE(t.tn)+(t.desc?' - ':''):'')+rnE(t.desc))||'-'}</td><td>${t.type==='in'?fmt(t.amt):'-'}</td><td>${t.type==='out'?fmt(t.amt):'-'}</td><td>${fmt(t.bal)}</td><td>${pf[t.id]?`<button class="btn s" data-a="rnpf" data-i="${t.id}">Lihat</button>`:(t.pf?'di perangkat lain':'-')}</td><td><button class="btn s" data-a="rndel" data-i="${t.id}">Hapus</button></td></tr>`).join('')}
+ <tr class="t"><td colspan="${gab?4:3}">Total</td><td>${fmt(D.inc)}</td><td>${fmt(D.out)}</td><td>${fmt(D.bal)}</td><td></td><td></td></tr></table></div></div>`}
+function vn(){const D=rnData(Q.na,Q.nall?Q.nm:'all');return Q.nall?rnFull(D):rnAcc()+rnKpi(D)+rnForm()+rnRecent(D)+rnSet()}
+function rnAdd(){rnKeep();const E=rnEff(),amt=Math.round(+RF.n||0),kost=E.ty==='in'&&E.c===KC;
  if(amt<=0){$('rn').focus();toast('Isi nominal dulu');return 0}
- const id='t'+Date.now().toString(36),ty=g('rj'),t={id,acc:g('ra'),date:dt,type:ty,cat:g('rc'),desc:g('rk').trim(),amt};
- if(ty==='in'&&t.cat===KC&&g('rt')){const r=S.rooms.find(x=>+x.no===+g('rt'));if(r){t.ten=+r.no;t.tn=r.name}}
+ if(kost&&S.rooms.filter(r=>r.name).length&&!RF.r){toast('Pilih penghuni yang bayar');return 0}
+ const id='t'+Date.now().toString(36),t={id,acc:E.ac,date:RF.d||todayStr(),type:E.ty,cat:E.c,desc:(RF.k||'').trim(),amt};
+ if(kost&&RF.r){const r=S.rooms.find(x=>+x.no===+RF.r);if(r){t.ten=+r.no;t.tn=r.name}}
  if(PF){const o=rpGet();o[id]=PF;rpSet(o);t.pf=1;PF=''}
- S.reno.tx.push(t);return 1}
+ S.reno.tx.push(t);RF.n=RF.k=RF.r=RF.d=RF.c='';return 1}
 function rnShow(id){const u=rpGet()[id];if(!u)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(11,31,63,.85);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out';o.innerHTML='<img alt="Bukti" style="max-width:100%;max-height:100%;border-radius:12px;border:3px solid #fff">';o.firstChild.src=u;o.onclick=()=>o.remove();document.body.appendChild(o)}
 function rnChart(){const D=rnData(),k=Object.keys(D.cats),j=Object.keys(D.catsIn);if(j.length)cc('c4','bar',j,[{label:'Pemasukan',data:j.map(x=>D.catsIn[x]),backgroundColor:'#0b6b3a',borderRadius:8}]);if(k.length)cc('c3','bar',k,[{label:'Pengeluaran',data:k.map(x=>D.cats[x]),backgroundColor:'#0b2a5b',borderRadius:8}])}
 async function rnXls(){if(!(await lib('ExcelJS')))return alert('Library Excel gagal dimuat. Periksa koneksi internet atau matikan pemblokir iklan, lalu coba lagi.');
@@ -424,7 +438,7 @@ function anim(){const m=$('mn');m.classList.remove('in');void m.offsetWidth;m.cl
 let tt;function toast(t){const e=$('ts');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),1700)}
 /* ---------- interaksi ---------- */
 on(document,'change',e=>{const el=e.target;
- if(el.id==='rpf'){rnFile(el);return}if(el.id==='rj'){rnCats();return}if(el.id==='rc'){rnTen();return}if(el.id==='fi'){const f=el.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(d.rooms){S=norm(d);S.rep=ci();save();render()}else alert('File bukan cadangan yang valid.')}).catch(()=>alert('File tidak bisa dibaca.'));return}
+ if(el.id==='rpf'){rnFile(el);return}if(el.id==='fi'){const f=el.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(d.rooms){S=norm(d);S.rep=ci();save();render()}else alert('File bukan cadangan yang valid.')}).catch(()=>alert('File tidak bisa dibaca.'));return}
  const q=el.dataset.q;if(q){if(q==='dl'){const v=el.value;el.value='';if(v==='x')xlsx();if(v==='p')pptx();return}if(q==='ps')return;Q[q]=NQ.includes(q)?+el.value:el.value;render();return}
  const p=el.dataset.f;if(!p)return;const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++){o[k[i]]=o[k[i]]??{};o=o[k[i]]}
  const v=el.dataset.t==='n'?(el.value===''?0:+el.value):el.value;o[k[k.length-1]]=v;
@@ -444,11 +458,15 @@ on(document,'click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const 
  else if(a==='fillall'){const n=+$('amt').value||0;M.forEach(m=>S.exp[Q.ei].v[m.k]=n)}
  else if(a==='addexp'){const n=$('nc').value.trim();if(!n)return;S.exp.push({name:n,v:{}});Q.ei=S.exp.length-1}
  else if(a==='delexp'){if(S.exp.length&&confirm('Hapus kategori "'+S.exp[Q.ei].name+'"?')){S.exp.splice(Q.ei,1);Q.ei=0}else return}
+ else if(a==='rnacc'){rnKeep();Q.na=d.i;render();return}
+ else if(a==='rntype'){rnKeep();RF.t=d.i;RF.c=RF.r='';render();return}
+ else if(a==='rnra'){rnKeep();RF.a=d.i;render();return}
+ else if(a==='rncat'){rnKeep();if(d.i==='+'){const n=(prompt('Nama kategori baru:')||'').trim();if(!n)return;const L=RF.t==='in'?S.reno.cin:S.reno.cats;if(!L.includes(n))L.push(n);RF.c=n;save()}else RF.c=d.i;RF.r='';render();return}
+ else if(a==='rnten'){rnKeep();RF.r=d.i;render();return}
+ else if(a==='rnset'){rnKeep();Q.nset=!Q.nset;render();return}
+ else if(a==='rnall'){rnKeep();Q.nall=!!d.i;render();scrollTo({top:0,behavior:'smooth'});return}
  else if(a==='rnadd'){if(!rnAdd())return}
  else if(a==='rndel'){if(!confirm('Hapus transaksi ini?'))return;S.reno.tx=S.reno.tx.filter(x=>x.id!==d.i);const o=rpGet();delete o[d.i];rpSet(o)}
- else if(a==='rncat'){const n=$('rcn').value.trim();if(!n){$('rcn').focus();toast('Isi nama kategori dulu');return}if(!S.reno.cats.includes(n))S.reno.cats.push(n)}
- else if(a==='rncin'){const n=$('rci').value.trim();if(!n){$('rci').focus();toast('Isi nama kategori dulu');return}if(!S.reno.cin.includes(n))S.reno.cin.push(n)}
- else if(a==='rnacc'){const n=$('ran').value.trim();if(!n){$('ran').focus();toast('Isi nama rekening dulu');return}S.reno.accs.push({id:'a'+Date.now().toString(36),bank:'BCA',name:n,open:0})}
  else if(a==='rnpf'){rnShow(d.i);return}else if(a==='rnxls'){rnXls();return}
  else if(a==='xlsx'){xlsx();return}else if(a==='pptx'){pptx();return}
  else if(a==='bak'){const B=JSON.parse(JSON.stringify(S));Object.keys(B.pay).forEach(k=>{if(B.pay[k]){const q=k.split('|'),I=payInfo(q[0],q[1]);B.pay[k]=I.d?I.d+'|'+I.m:1}});dl(new Blob([JSON.stringify(B,null,1)],{type:'application/json'}),'cadangan-kost-griya-hans.json');return}
